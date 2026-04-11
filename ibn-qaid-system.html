@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ابن قايد المريسي - نظام إدارة الحسابات</title>
+<link rel="icon" href="https://i.ibb.co/Zpqj6KF0/251029-001757.jpg">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Cairo','Segoe UI',Tahoma,sans-serif;background:#f1f5f9;direction:rtl}
+input,select,button,textarea{font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:#802a5d!important;box-shadow:0 0 0 3px rgba(128,42,93,0.1);outline:none}
+button{transition:all 0.2s;cursor:pointer}button:hover{opacity:0.92}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn 0.35s ease}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}.pulse{animation:pulse 2s infinite}
+@media print{body{background:none!important;padding:0!important}.no-print{display:none!important}.page-a4{box-shadow:none!important;margin:0!important;page-break-after:always;break-after:page}}
+@page{size:A4 portrait;margin:0}
+.page-a4{background:white;width:210mm;min-height:296mm;position:relative;overflow:hidden;display:flex;flex-direction:column;border-top:15px solid #f39c12;border-bottom:15px solid #802a5d;font-family:'Cairo',sans-serif;direction:rtl;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+.wm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;opacity:0.03;z-index:0;pointer-events:none;display:flex;justify-content:center}.wm img{width:100%;filter:grayscale(100%)}
+.cw{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;padding:10mm 15mm;gap:15px;justify-content:space-between}
+.dm{position:absolute;bottom:3px;right:10px;font-size:8px;color:#ccc;font-style:italic;opacity:0.7}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700}
+.badge-green{background:#dcfce7;color:#16a34a}.badge-yellow{background:#fef9c3;color:#a16207}.badge-red{background:#fef2f2;color:#dc2626}.badge-blue{background:#dbeafe;color:#1d4ed8}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.15);display:flex;align-items:center;gap:8px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const{useState,useRef,useEffect,useCallback}=React;
+const B={purple:'#802a5d',orange:'#f39c12',dark:'#4a1a35',light:'#f8f0f5'};
+const LOGO="https://i.ibb.co/Zpqj6KF0/251029-001757.jpg";
+const ADMIN_EMAIL="Alwageh717@gmail.com";
+
+// ============ DATABASE (localStorage) ============
+const DB={
+  get:(k)=>{try{return JSON.parse(localStorage.getItem('iq_'+k))}catch{return null}},
+  set:(k,v)=>{localStorage.setItem('iq_'+k,JSON.stringify(v))},
+  del:(k)=>{localStorage.removeItem('iq_'+k)},
+  init:()=>{
+    if(!DB.get('initialized')){
+      DB.set('admin',{email:'admin@ibnqaid.com',password:'ibnqaid2024',name:'مدير النظام'});
+      DB.set('users',[]);
+      DB.set('submissions',[]);
+      DB.set('settings',{
+        systemActive:true,
+        requiredFields:['fullName','idNumber','idType','idIssueDate','mobile','birthGov','currencies','mainSignature'],
+        branches:["المركز الرئيسي - الضالع","فرع مريس","فرع دمت","فرع قعطبة","فرع صنعاء","فرع عدن","فرع تعز"],
+        currencies:['ريال يمني','ريال سعودي','دولار أمريكي','درهم إماراتي','يورو','جنيه مصري'],
+        services:['الحضور الشخصي','الاتصال الهاتفي','رسائل SMS','تطبيق WhatsApp','البريد الإلكتروني'],
+        minAge:14,
+        idRules:{
+          'بطاقة شخصية':{digits:11,expiryYears:10,expiryMinusDay:true},
+          'جواز سفر':{digits:8,expiryYears:6,expiryMinusDay:false},
+          'بطاقة ذكية':{digits:12,expiryYears:6,expiryMinusDay:false}
+        },
+        minNameWords:4,
+        notifyEmail:ADMIN_EMAIL
+      });
+      DB.set('initialized',true);
+    }
+  }
+};
+DB.init();
+
+// ============ HELPERS ============
+const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const today=()=>new Date().toLocaleDateString('ar-YE',{year:'numeric',month:'long',day:'numeric'});
+const isoDate=()=>new Date().toISOString().split('T')[0];
+const addYears=(dateStr,years,minusDay)=>{
+  if(!dateStr)return'';
+  const d=new Date(dateStr);d.setFullYear(d.getFullYear()+years);
+  if(minusDay)d.setDate(d.getDate()-1);
+  return d.toISOString().split('T')[0];
+};
+const calcAge=(birthDate)=>{
+  if(!birthDate)return 99;
+  const b=new Date(birthDate),t=new Date();
+  let age=t.getFullYear()-b.getFullYear();
+  if(t.getMonth()<b.getMonth()||(t.getMonth()===b.getMonth()&&t.getDate()<b.getDate()))age--;
+  return age;
+};
+const countWords=(s)=>(s||'').trim().split(/\s+/).filter(Boolean).length;
+
+const sendNotification=(submission)=>{
+  const subject=encodeURIComponent(`طلب فتح حساب جديد - ${submission.fullName}`);
+  const body=encodeURIComponent(`السلام عليكم،\n\nتم تقديم طلب فتح حساب جديد:\n\nالاسم: ${submission.fullName}\nرقم الهوية: ${submission.idNumber}\nالجوال: ${submission.mobile}\nالفرع: ${submission.branch||'غير محدد'}\nالتاريخ: ${today()}\n\nيرجى الدخول إلى النظام لمراجعة الطلب واتخاذ القرار.`);
+  window.open(`mailto:${DB.get('settings').notifyEmail}?subject=${subject}&body=${body}`,'_blank');
+};
+
+// ============ REGIONS ============
+const regions={"الضالع":["مريس","دمت","قعطبة","الحصين","جحاف","الأزارق","الشعيب"],"صنعاء":["السبعين","التحرير","بني الحارث","سنحان","همدان","بني مطر"],"عدن":["المنصورة","الشيخ عثمان","كريتر","خور مكسر","المعلا","التواهي"],"تعز":["المظفر","القاهرة","صالة","مقبنة","المخا","التربة"],"حضرموت":["المكلا","سيئون","الشحر","تريم","القطن"],"إب":["الظهار","المشنة","جبلة","السياني","يريم","العدين"],"الحديدة":["الحالي","الحوك","الميناء","باجل","بيت الفقيه"],"ذمار":["عنس","الحداء","جهران","وصاب العالي","وصاب السافل"],"مأرب":["المدينة","الوادي","صرواح","حريب"],"عمران":["خمر","ريدة","حوث"],"صعدة":["سحار","مجز","الصفراء"],"لحج":["الحوطة","تبن","يافع","المفلحي"],"أبين":["زنجبار","جعار","لودر","مودية"],"البيضاء":["رداع","الزاهر"],"شبوة":["عتق","بيحان","عزان"],"المهرة":["الغيضة"],"الجوف":["الحزم"],"حجة":["عبس","المحابشة"],"المحويت":["شبام"],"ريمة":["الجبين"],"سقطرى":["حديبو"]};
+const perms=['السحب النقدي / إرسال الحوالات','الاطلاع على الرصيد','طلب كشف حساب','التحويل لأشخاص آخرين','التواصل لإرسال/طلب حوالات','كافة الصلاحيات'];
+
+// ============ SIGNATURE PAD ============
+const SigPad=({label,onSave,init})=>{
+  const ref=useRef(null);const[dr,setDr]=useState(false);const[has,setHas]=useState(!!init);
+  const gp=(e)=>{const c=ref.current,r=c.getBoundingClientRect();const cx=e.clientX??(e.touches?.[0]?.clientX);const cy=e.clientY??(e.touches?.[0]?.clientY);return{x:(cx-r.left)*(c.width/r.width),y:(cy-r.top)*(c.height/r.height)};};
+  const st=(e)=>{e.preventDefault();const p=gp(e);ref.current.getContext('2d').beginPath();ref.current.getContext('2d').moveTo(p.x,p.y);setDr(true);};
+  const mv=(e)=>{e.preventDefault();if(!dr)return;const p=gp(e);const ctx=ref.current.getContext('2d');ctx.lineTo(p.x,p.y);ctx.stroke();setHas(true);};
+  const en=()=>{if(dr){setDr(false);onSave(ref.current.toDataURL());}};
+  const cl=()=>{ref.current.getContext('2d').clearRect(0,0,ref.current.width,ref.current.height);setHas(false);onSave(null);};
+  useEffect(()=>{const ctx=ref.current.getContext('2d');ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#1a1a2e';if(init){const img=new Image();img.onload=()=>ctx.drawImage(img,0,0);img.src=init;}},[]);
+  return(<div style={{marginBottom:8}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}><label style={{fontSize:11,fontWeight:700,color:'#64748b'}}>{label}</label>{has&&<button onClick={cl} style={{fontSize:11,color:'#ef4444',background:'none',border:'none'}}>مسح</button>}</div><div style={{border:'2px dashed #cbd5e1',borderRadius:14,background:'#f8fafc',position:'relative',overflow:'hidden',height:90}}><canvas ref={ref} width={500} height={90} style={{width:'100%',height:'100%',cursor:'crosshair',touchAction:'none'}} onMouseDown={st} onMouseMove={mv} onMouseUp={en} onMouseLeave={en} onTouchStart={st} onTouchMove={mv} onTouchEnd={en}/>{!has&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none',color:'#94a3b8',fontSize:12}}>وقّع هنا</div>}</div></div>);
+};
+
+// ============ SHARED UI ============
+const inp=(err)=>({width:'100%',padding:'11px 13px',background:err?'#fef2f2':'#f8fafc',border:`1.5px solid ${err?'#fca5a5':'#e2e8f0'}`,borderRadius:12,outline:'none',fontSize:13,boxSizing:'border-box'});
+const chip=(on)=>({padding:'8px 14px',borderRadius:10,border:`1.5px solid ${on?B.purple:'#e2e8f0'}`,background:on?B.purple:'white',color:on?'white':'#64748b',fontSize:12,fontWeight:700,cursor:'pointer'});
+const Fld=({label,req,err,errMsg,children})=><div style={{marginBottom:10}}><label style={{display:'flex',alignItems:'center',gap:4,fontSize:11,fontWeight:700,color:err?'#ef4444':'#64748b',marginBottom:3}}>{label}{req&&<span style={{color:'#ef4444'}}>*</span>}{err&&<span style={{fontSize:9,color:'#ef4444',background:'#fef2f2',padding:'1px 6px',borderRadius:4}}>⚠ {errMsg||'مطلوب'}</span>}</label>{children}</div>;
+const Toast=({msg,type,onClose})=>{
+  useEffect(()=>{const t=setTimeout(onClose,4000);return()=>clearTimeout(t);},[]);
+  const colors={success:{bg:'#dcfce7',color:'#16a34a',icon:'✓'},error:{bg:'#fef2f2',color:'#dc2626',icon:'✕'},info:{bg:'#dbeafe',color:'#1d4ed8',icon:'ℹ'}};
+  const c=colors[type]||colors.info;
+  return<div className="toast" style={{background:c.bg,color:c.color}}><span style={{fontSize:16}}>{c.icon}</span>{msg}</div>;
+};
+
+// ============ LOGIN SCREEN ============
+const LoginScreen=({onLogin,onPublicForm})=>{
+  const[email,setEmail]=useState('');const[pass,setPass]=useState('');const[show,setShow]=useState(false);const[err,setErr]=useState('');const[loading,setLoading]=useState(false);
+  const settings=DB.get('settings');
+  const go=()=>{
+    if(!settings.systemActive&&email!==DB.get('admin').email){setErr('النظام متوقف حالياً');return;}
+    setLoading(true);
+    setTimeout(()=>{
+      const admin=DB.get('admin');
+      if(email===admin.email&&pass===admin.password){onLogin({...admin,role:'admin',id:'admin'});return;}
+      const users=DB.get('users')||[];
+      const user=users.find(u=>u.email===email&&u.password===pass&&u.active);
+      if(user){onLogin({...user,role:'subadmin'});return;}
+      setErr('بيانات الدخول غير صحيحة');setLoading(false);
+    },500);
+  };
+  return(
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:`linear-gradient(135deg,${B.dark},${B.purple},#a0345a)`,padding:16}}>
+      <div style={{width:'100%',maxWidth:420,background:'white',borderRadius:28,boxShadow:'0 30px 60px rgba(0,0,0,0.3)',overflow:'hidden'}}>
+        <div style={{height:5,background:`linear-gradient(90deg,${B.orange},${B.purple})`}}/>
+        <div style={{padding:'40px 32px 32px'}}>
+          <div style={{textAlign:'center',marginBottom:32}}>
+            <img src={LOGO} style={{height:80,margin:'0 auto 12px'}} alt=""/>
+            <h1 style={{fontSize:20,fontWeight:900,color:B.purple}}>نظام فتح الحسابات</h1>
+            <p style={{fontSize:11,color:'#94a3b8',marginTop:4}}>ابن قايد المريسي للصرافة والتحويلات</p>
+            {!settings.systemActive&&<div className="badge badge-red" style={{marginTop:8,fontSize:12}}>⚠ النظام متوقف - الدخول للإدارة فقط</div>}
+          </div>
+          {err&&<div style={{display:'flex',alignItems:'center',gap:8,padding:'10px 14px',background:'#fef2f2',border:'1px solid #fecaca',borderRadius:10,marginBottom:14,fontSize:12,color:'#dc2626'}}><span>⚠</span>{err}</div>}
+          <div style={{marginBottom:14}}><label style={{display:'block',fontSize:11,fontWeight:700,color:'#64748b',marginBottom:4}}>البريد الإلكتروني</label><input type="email" value={email} onChange={e=>{setEmail(e.target.value);setErr('');}} placeholder="example@email.com" onKeyDown={e=>e.key==='Enter'&&go()} style={{width:'100%',padding:'12px 14px',background:'#f8fafc',border:'1.5px solid #e2e8f0',borderRadius:12,outline:'none',fontSize:13,boxSizing:'border-box'}}/></div>
+          <div style={{marginBottom:24}}><label style={{display:'block',fontSize:11,fontWeight:700,color:'#64748b',marginBottom:4}}>كلمة المرور</label><div style={{position:'relative'}}><input type={show?'text':'password'} value={pass} onChange={e=>{setPass(e.target.value);setErr('');}} placeholder="••••••••" onKeyDown={e=>e.key==='Enter'&&go()} style={{width:'100%',padding:'12px 14px',background:'#f8fafc',border:'1.5px solid #e2e8f0',borderRadius:12,outline:'none',fontSize:13,boxSizing:'border-box'}}/><button onClick={()=>setShow(!show)} style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',color:'#94a3b8',fontSize:16}}>{show?'🙈':'👁'}</button></div></div>
+          <button onClick={go} disabled={loading||!email||!pass} style={{width:'100%',padding:14,background:loading?'#94a3b8':B.purple,color:'white',border:'none',borderRadius:14,fontSize:15,fontWeight:900}}>{loading?'جارٍ التحقق...':'تسجيل الدخول'}</button>
+          {settings.systemActive&&<div style={{textAlign:'center',marginTop:20}}><button onClick={onPublicForm} style={{background:'none',border:`2px solid ${B.orange}`,color:B.purple,padding:'10px 24px',borderRadius:12,fontSize:13,fontWeight:800}}>📝 تقديم طلب فتح حساب (للعملاء)</button></div>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============ ADMIN DASHBOARD ============
+const AdminPanel=({user,onLogout})=>{
+  const[tab,setTab]=useState('submissions');
+  const[subs,setSubs]=useState(DB.get('submissions')||[]);
+  const[users,setUsers]=useState(DB.get('users')||[]);
+  const[settings,setSettings]=useState(DB.get('settings'));
+  const[admin,setAdmin]=useState(DB.get('admin'));
+  const[toast,setToast]=useState(null);
+  const[selectedSub,setSelectedSub]=useState(null);
+  const[showPDF,setShowPDF]=useState(null);
+  const[newUser,setNewUser]=useState({name:'',email:'',password:'',branch:''});
+
+  const refresh=()=>{setSubs(DB.get('submissions')||[]);setUsers(DB.get('users')||[]);setSettings(DB.get('settings'));};
+  const showToast=(msg,type='success')=>setToast({msg,type});
+
+  const updateSubStatus=(id,status)=>{
+    const s=subs.map(s=>s.id===id?{...s,status,reviewedBy:user.name||user.email,reviewDate:isoDate()}:s);
+    DB.set('submissions',s);setSubs(s);
+    showToast(status==='approved'?'تمت الموافقة على الطلب':'تم رفض الطلب',status==='approved'?'success':'error');
+  };
+
+  const addUser=()=>{
+    if(!newUser.name||!newUser.email||!newUser.password){showToast('أكمل جميع البيانات','error');return;}
+    if(users.find(u=>u.email===newUser.email)){showToast('البريد مسجل مسبقاً','error');return;}
+    const u=[...users,{...newUser,id:genId(),active:true,createdAt:isoDate()}];
+    DB.set('users',u);setUsers(u);setNewUser({name:'',email:'',password:'',branch:''});
+    showToast('تم إضافة المستخدم بنجاح');
+  };
+  const toggleUser=(id)=>{const u=users.map(u=>u.id===id?{...u,active:!u.active}:u);DB.set('users',u);setUsers(u);};
+  const removeUser=(id)=>{if(!confirm('حذف المستخدم؟'))return;const u=users.filter(u=>u.id!==id);DB.set('users',u);setUsers(u);showToast('تم حذف المستخدم');};
+
+  const updateSettings=(key,val)=>{const s={...settings,[key]:val};DB.set('settings',s);setSettings(s);};
+  const updateAdmin=(key,val)=>{const a={...admin,[key]:val};DB.set('admin',a);setAdmin(a);};
+
+  const deleteSub=(id)=>{if(!confirm('حذف الطلب نهائياً؟'))return;const s=subs.filter(s=>s.id!==id);DB.set('submissions',s);setSubs(s);showToast('تم الحذف');};
+
+  const printSub=(sub)=>{setShowPDF(sub);setTimeout(()=>{html2pdf().from(document.getElementById('pdf-output')).set({margin:0,filename:`حساب_${sub.fullName}.pdf`,image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true,allowTaint:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css'],before:'.page-a4'}}).save().then(()=>setShowPDF(null));},500);};
+
+  const isAdmin=user.role==='admin';
+  const tabs=isAdmin?[
+    {id:'submissions',label:'الطلبات',icon:'📋',count:subs.filter(s=>s.status==='pending').length},
+    {id:'users',label:'المستخدمون',icon:'👥'},
+    {id:'settings',label:'الإعدادات',icon:'⚙️'},
+  ]:[
+    {id:'submissions',label:'الطلبات',icon:'📋',count:subs.filter(s=>s.status==='approved').length},
+  ];
+
+  return(
+    <div className="no-print" style={{minHeight:'100vh',background:'#f1f5f9',padding:16}}>
+      {toast&&<Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
+      {showPDF&&<div style={{position:'fixed',inset:0,zIndex:2000,background:'#444',overflow:'auto'}}><button onClick={()=>setShowPDF(null)} style={{position:'fixed',top:16,left:16,zIndex:2001,width:40,height:40,borderRadius:'50%',background:'white',border:'none',boxShadow:'0 4px 12px rgba(0,0,0,0.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>✕</button><div style={{padding:20,display:'flex',flexDirection:'column',alignItems:'center'}}><PDFDoc f={showPDF} op={user}/></div></div>}
+
+      <div style={{maxWidth:900,margin:'0 auto'}}>
+        {/* Top Bar */}
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16,background:'white',padding:'12px 20px',borderRadius:16,boxShadow:'0 2px 8px rgba(0,0,0,0.05)'}}>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <img src={LOGO} style={{height:36}} alt=""/>
+            <div><p style={{margin:0,fontSize:13,fontWeight:800,color:'#1e293b'}}>{user.name||user.email}</p><p style={{margin:0,fontSize:10,color:'#94a3b8'}}>{isAdmin?'المدير الرئيسي':'مستخدم فرعي'} {user.branch?`| ${user.branch}`:''}</p></div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            {isAdmin&&<div className={`badge ${settings.systemActive?'badge-green':'badge-red'}`}>{settings.systemActive?'🟢 النظام يعمل':'🔴 النظام متوقف'}</div>}
+            <button onClick={onLogout} style={{display:'flex',alignItems:'center',gap:4,padding:'6px 14px',background:'#fef2f2',color:'#dc2626',border:'none',borderRadius:8,fontSize:11,fontWeight:700}}>خروج ↩</button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div style={{display:'flex',gap:8,marginBottom:16}}>{tabs.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{display:'flex',alignItems:'center',gap:6,padding:'10px 18px',background:tab===t.id?B.purple:'white',color:tab===t.id?'white':'#64748b',border:'none',borderRadius:12,fontSize:13,fontWeight:700,boxShadow:tab===t.id?`0 4px 12px ${B.purple}33`:'0 1px 3px rgba(0,0,0,0.05)'}}>{t.icon} {t.label}{t.count>0&&<span style={{background:tab===t.id?'rgba(255,255,255,0.3)':'#ef4444',color:'white',padding:'1px 7px',borderRadius:10,fontSize:10,fontWeight:800}}>{t.count}</span>}</button>)}</div>
+
+        {/* Content */}
+        <div style={{background:'white',borderRadius:20,padding:24,boxShadow:'0 4px 16px rgba(0,0,0,0.05)',minHeight:400}}>
+
+          {/* === SUBMISSIONS TAB === */}
+          {tab==='submissions'&&<div className="fade-in">
+            <h3 style={{fontSize:16,fontWeight:800,color:B.purple,marginBottom:16}}>📋 الطلبات المقدمة ({subs.length})</h3>
+            {subs.length===0?<div style={{textAlign:'center',padding:40,color:'#94a3b8'}}><p style={{fontSize:48}}>📭</p><p>لا توجد طلبات بعد</p></div>:
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              {subs.sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt)).map(s=>(
+                <div key={s.id} style={{border:'1px solid #e2e8f0',borderRadius:14,padding:16,background:'#fafafa'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
+                    <div>
+                      <h4 style={{margin:0,fontSize:14,fontWeight:800,color:'#1e293b'}}>{s.fullName}</h4>
+                      <p style={{margin:'2px 0 0',fontSize:11,color:'#64748b'}}>{s.idType}: {s.idNumber} | {s.mobile} | {s.branch||'—'}</p>
+                      <p style={{margin:'2px 0 0',fontSize:10,color:'#94a3b8'}}>تاريخ التقديم: {s.submittedAt}</p>
+                    </div>
+                    <span className={`badge ${s.status==='pending'?'badge-yellow':s.status==='approved'?'badge-green':'badge-red'}`}>
+                      {s.status==='pending'?'⏳ قيد المراجعة':s.status==='approved'?'✅ معتمد':'❌ مرفوض'}
+                    </span>
+                  </div>
+                  {selectedSub===s.id&&<div className="fade-in" style={{background:'white',border:'1px solid #e2e8f0',borderRadius:10,padding:14,marginBottom:10,fontSize:12,lineHeight:2}}>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+                      {[['الاسم',s.fullName],['الهوية',s.idNumber],['نوع الهوية',s.idType],['الإصدار',s.idIssueDate],['الانتهاء',s.idExpiry],['الميلاد',s.birthDate],['المحافظة',s.birthGov],['المديرية',s.birthDistrict],['الجوال',s.mobile],['البريد',s.email],['الفرع',s.branch],['العملات',s.currencies?.join(', ')],['الخدمات',s.services?.join(', ')],['المفوضون',s.authorized?.filter(a=>a.name).length+' مفوض']].map(([k,v],i)=><div key={i}><strong style={{color:B.purple}}>{k}:</strong> {v||'—'}</div>)}
+                    </div>
+                    {s.idPhoto&&<div style={{marginTop:10}}><strong style={{color:B.purple}}>صورة الهوية:</strong><br/><img src={s.idPhoto} style={{maxWidth:300,maxHeight:200,borderRadius:8,marginTop:4,border:'1px solid #ddd'}} alt=""/></div>}
+                  </div>}
+                  <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                    <button onClick={()=>setSelectedSub(selectedSub===s.id?null:s.id)} style={{padding:'6px 12px',background:'#f1f5f9',color:'#475569',border:'none',borderRadius:8,fontSize:11,fontWeight:700}}>{selectedSub===s.id?'إخفاء':'👁 عرض'}</button>
+                    <button onClick={()=>printSub(s)} style={{padding:'6px 12px',background:'#dbeafe',color:'#1d4ed8',border:'none',borderRadius:8,fontSize:11,fontWeight:700}}>🖨 طباعة PDF</button>
+                    {isAdmin&&s.status==='pending'&&<>
+                      <button onClick={()=>updateSubStatus(s.id,'approved')} style={{padding:'6px 12px',background:'#dcfce7',color:'#16a34a',border:'none',borderRadius:8,fontSize:11,fontWeight:700}}>✅ موافقة</button>
+                      <button onClick={()=>updateSubStatus(s.id,'rejected')} style={{padding:'6px 12px',background:'#fef2f2',color:'#dc2626',border:'none',borderRadius:8,fontSize:11,fontWeight:700}}>❌ رفض</button>
+                    </>}
+                    {isAdmin&&<button onClick={()=>deleteSub(s.id)} style={{padding:'6px 12px',background:'#fef2f2',color:'#dc2626',border:'none',borderRadius:8,fontSize:11,fontWeight:700}}>🗑</button>}
+                  </div>
+                  {s.reviewedBy&&<p style={{margin:'8px 0 0',fontSize:10,color:'#94a3b8'}}>تمت المراجعة بواسطة: {s.reviewedBy} | {s.reviewDate}</p>}
+                </div>
+              ))}
+            </div>}
+          </div>}
+
+          {/* === USERS TAB === */}
+          {tab==='users'&&isAdmin&&<div className="fade-in">
+            <h3 style={{fontSize:16,fontWeight:800,color:B.purple,marginBottom:16}}>👥 إدارة المستخدمين</h3>
+            <div style={{background:'#f8fafc',borderRadius:14,padding:16,marginBottom:16,border:'1px solid #e2e8f0'}}>
+              <h4 style={{fontSize:13,fontWeight:700,color:'#475569',marginBottom:10}}>➕ إضافة مستخدم جديد</h4>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+                <input style={inp()} placeholder="الاسم" value={newUser.name} onChange={e=>setNewUser({...newUser,name:e.target.value})}/>
+                <input style={inp()} placeholder="البريد الإلكتروني" type="email" value={newUser.email} onChange={e=>setNewUser({...newUser,email:e.target.value})}/>
+                <input style={inp()} placeholder="كلمة المرور" value={newUser.password} onChange={e=>setNewUser({...newUser,password:e.target.value})}/>
+                <select style={inp()} value={newUser.branch} onChange={e=>setNewUser({...newUser,branch:e.target.value})}><option value="">اختر الفرع</option>{settings.branches.map(b=><option key={b}>{b}</option>)}</select>
+              </div>
+              <button onClick={addUser} style={{marginTop:10,padding:'10px 20px',background:B.purple,color:'white',border:'none',borderRadius:10,fontSize:13,fontWeight:700}}>✓ إضافة</button>
+            </div>
+            {users.length===0?<p style={{textAlign:'center',color:'#94a3b8',padding:20}}>لا يوجد مستخدمون فرعيون</p>:
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>{users.map(u=>(
+              <div key={u.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:14,background:'#fafafa',borderRadius:12,border:'1px solid #e2e8f0'}}>
+                <div><p style={{margin:0,fontSize:13,fontWeight:700}}>{u.name}</p><p style={{margin:0,fontSize:11,color:'#64748b'}}>{u.email} | {u.branch||'—'}</p></div>
+                <div style={{display:'flex',gap:6}}>
+                  <button onClick={()=>toggleUser(u.id)} style={{padding:'6px 12px',background:u.active?'#dcfce7':'#fef2f2',color:u.active?'#16a34a':'#dc2626',border:'none',borderRadius:8,fontSize:11,fontWeight:700}}>{u.active?'🟢 فعّال':'🔴 معطّل'}</button>
+                  <button onClick={()=>removeUser(u.id)} style={{padding:'6px 12px',background:'#fef2f2',color:'#dc2626',border:'none',borderRadius:8,fontSize:11,fontWeight:700}}>🗑 حذف</button>
+                </div>
+              </div>
+            ))}</div>}
+
+            {/* Admin credentials */}
+            <div style={{marginTop:24,background:'#fffbeb',borderRadius:14,padding:16,border:'1px solid #fef3c7'}}>
+              <h4 style={{fontSize:13,fontWeight:700,color:'#92400e',marginBottom:10}}>🔐 بيانات دخول المدير</h4>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+                <div><label style={{fontSize:10,fontWeight:700,color:'#64748b'}}>الاسم</label><input style={inp()} value={admin.name} onChange={e=>updateAdmin('name',e.target.value)}/></div>
+                <div><label style={{fontSize:10,fontWeight:700,color:'#64748b'}}>البريد</label><input style={inp()} value={admin.email} onChange={e=>updateAdmin('email',e.target.value)}/></div>
+                <div><label style={{fontSize:10,fontWeight:700,color:'#64748b'}}>كلمة المرور</label><input style={inp()} value={admin.password} onChange={e=>updateAdmin('password',e.target.value)}/></div>
+              </div>
+              <button onClick={()=>showToast('تم حفظ بيانات المدير')} style={{marginTop:8,padding:'8px 16px',background:'#92400e',color:'white',border:'none',borderRadius:8,fontSize:12,fontWeight:700}}>💾 حفظ</button>
+            </div>
+          </div>}
+
+          {/* === SETTINGS TAB === */}
+          {tab==='settings'&&isAdmin&&<div className="fade-in">
+            <h3 style={{fontSize:16,fontWeight:800,color:B.purple,marginBottom:16}}>⚙️ إعدادات النظام</h3>
+
+            {/* System Toggle */}
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:16,background:settings.systemActive?'#f0fdf4':'#fef2f2',borderRadius:14,marginBottom:16,border:`1px solid ${settings.systemActive?'#bbf7d0':'#fecaca'}`}}>
+              <div><h4 style={{margin:0,fontSize:14,fontWeight:800}}>{settings.systemActive?'🟢 النظام يعمل':'🔴 النظام متوقف'}</h4><p style={{margin:'4px 0 0',fontSize:11,color:'#64748b'}}>عند الإيقاف لن يتمكن العملاء من تقديم طلبات</p></div>
+              <button onClick={()=>updateSettings('systemActive',!settings.systemActive)} style={{padding:'10px 20px',background:settings.systemActive?'#dc2626':'#16a34a',color:'white',border:'none',borderRadius:10,fontSize:13,fontWeight:800}}>{settings.systemActive?'إيقاف النظام':'تشغيل النظام'}</button>
+            </div>
+
+            {/* Notification Email */}
+            <div style={{marginBottom:16}}><Fld label="بريد الإشعارات"><input style={inp()} value={settings.notifyEmail} onChange={e=>updateSettings('notifyEmail',e.target.value)}/></Fld></div>
+
+            {/* Min Age */}
+            <div style={{marginBottom:16}}><Fld label="الحد الأدنى للعمر"><input type="number" style={{...inp(),width:100}} value={settings.minAge} onChange={e=>updateSettings('minAge',parseInt(e.target.value)||14)}/></Fld></div>
+
+            {/* Min Name Words */}
+            <div style={{marginBottom:16}}><Fld label="الحد الأدنى لكلمات الاسم (مع اللقب)"><input type="number" style={{...inp(),width:100}} value={settings.minNameWords} onChange={e=>updateSettings('minNameWords',parseInt(e.target.value)||4)}/></Fld></div>
+
+            {/* ID Rules */}
+            <div style={{marginBottom:16,background:'#f8fafc',borderRadius:14,padding:16,border:'1px solid #e2e8f0'}}>
+              <h4 style={{fontSize:13,fontWeight:700,color:B.purple,marginBottom:10}}>📋 قواعد أنواع الهويات</h4>
+              {Object.entries(settings.idRules).map(([type,rule])=>(
+                <div key={type} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8,fontSize:12}}>
+                  <strong style={{minWidth:100}}>{type}:</strong>
+                  <span>عدد الأرقام:</span>
+                  <input type="number" style={{...inp(),width:70,padding:6,fontSize:12}} value={rule.digits} onChange={e=>{const r={...settings.idRules};r[type]={...rule,digits:parseInt(e.target.value)};updateSettings('idRules',r);}}/>
+                  <span>سنوات الانتهاء:</span>
+                  <input type="number" style={{...inp(),width:60,padding:6,fontSize:12}} value={rule.expiryYears} onChange={e=>{const r={...settings.idRules};r[type]={...rule,expiryYears:parseInt(e.target.value)};updateSettings('idRules',r);}}/>
+                </div>
+              ))}
+            </div>
+
+            {/* Branches */}
+            <div style={{marginBottom:16,background:'#f8fafc',borderRadius:14,padding:16,border:'1px solid #e2e8f0'}}>
+              <h4 style={{fontSize:13,fontWeight:700,color:B.purple,marginBottom:10}}>🏢 الفروع</h4>
+              {settings.branches.map((b,i)=><div key={i} style={{display:'flex',gap:6,marginBottom:4}}><input style={{...inp(),fontSize:12,padding:6}} value={b} onChange={e=>{const br=[...settings.branches];br[i]=e.target.value;updateSettings('branches',br);}}/><button onClick={()=>updateSettings('branches',settings.branches.filter((_,j)=>j!==i))} style={{background:'#fef2f2',border:'none',borderRadius:6,padding:'4px 8px',color:'#dc2626',fontSize:12}}>✕</button></div>)}
+              <button onClick={()=>updateSettings('branches',[...settings.branches,'فرع جديد'])} style={{marginTop:6,padding:'6px 12px',background:B.purple,color:'white',border:'none',borderRadius:8,fontSize:11,fontWeight:700}}>+ إضافة فرع</button>
+            </div>
+
+            {/* Reset */}
+            <button onClick={()=>{if(confirm('إعادة ضبط كل شيء؟')){localStorage.clear();DB.init();refresh();showToast('تم إعادة الضبط','info');}}} style={{padding:'10px 20px',background:'#dc2626',color:'white',border:'none',borderRadius:10,fontSize:13,fontWeight:700}}>⚠️ إعادة ضبط النظام بالكامل</button>
+          </div>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============ CLIENT FORM ============
+const ClientForm=({onBack})=>{
+  const settings=DB.get('settings');
+  const[step,setStep]=useState(1);const[errs,setErrs]=useState({});const[toast,setToast]=useState(null);const[submitted,setSubmitted]=useState(false);const[subData,setSubData]=useState(null);
+  const T=7;
+  const[fd,setFd]=useState({fullName:'',idNumber:'',idType:'بطاقة شخصية',idIssueDate:'',idExpiry:'',idIssuePlace:'',birthDate:'',birthGov:'',birthDistrict:'',nationality:'يمني',address:'',mobile:'',email:'',phone:'',branch:'',nickname:'',businessName:'',businessType:'',legalForm:'',currencies:[],services:[],sampleSignatures:[null,null,null],mainSignature:null,authorized:[{name:'',id:'',phone:'',email:'',permissions:[],signature:null}],idPhoto:null,termsAccepted:false});
+
+  const uf=(f,v)=>{
+    let updates={[f]:v};
+    if(f==='birthGov')updates.birthDistrict='';
+    if(f==='idType'||f==='idIssueDate'){
+      const type=f==='idType'?v:fd.idType;
+      const issueDate=f==='idIssueDate'?v:fd.idIssueDate;
+      const rule=settings.idRules[type];
+      if(rule&&issueDate){updates.idExpiry=addYears(issueDate,rule.expiryYears,rule.expiryMinusDay);}
+      if(f==='idType'){updates.idNumber='';updates.idExpiry='';}
+    }
+    setFd(p=>({...p,...updates}));setErrs(p=>({...p,[f]:undefined}));
+  };
+  const ti=(fl,v)=>{setFd(p=>({...p,[fl]:p[fl].includes(v)?p[fl].filter(i=>i!==v):[...p[fl],v]}));};
+  const ua=(i,f,v)=>{setFd(p=>{const a=[...p.authorized];a[i]={...a[i],[f]:v};return{...p,authorized:a};});};
+
+  const idRule=settings.idRules[fd.idType]||{digits:11,expiryYears:10};
+
+  const validate=()=>{
+    const e={};
+    if(step===1&&!fd.termsAccepted)e.terms='يجب الموافقة على الشروط';
+    if(step===2){
+      if(countWords(fd.fullName)<settings.minNameWords)e.fullName=`يجب ${settings.minNameWords} كلمات على الأقل`;
+      if(!fd.nickname?.trim())e.nickname='اللقب مطلوب';
+      if(!fd.idNumber)e.idNumber='مطلوب';
+      else if(fd.idNumber.length!==idRule.digits)e.idNumber=`يجب أن يكون ${idRule.digits} رقم`;
+      else if(!/^\d+$/.test(fd.idNumber))e.idNumber='أرقام فقط';
+      if(!fd.idIssueDate)e.idIssueDate='مطلوب';
+      if(fd.birthDate&&calcAge(fd.birthDate)<settings.minAge)e.birthDate=`العمر أقل من ${settings.minAge} سنة`;
+    }
+    if(step===3){if(!fd.mobile?.trim())e.mobile='مطلوب';if(!fd.birthGov)e.birthGov='مطلوب';}
+    if(step===4&&fd.currencies.length===0)e.currencies='اختر عملة واحدة على الأقل';
+    if(step===6){if(!fd.mainSignature)e.mainSignature='التوقيع الرئيسي مطلوب';}
+    setErrs(e);return!Object.keys(e).length;
+  };
+  const nx=()=>{if(validate())setStep(s=>Math.min(s+1,T));};
+
+  const submitForm=()=>{
+    const submission={...fd,id:genId(),status:'pending',submittedAt:isoDate()};
+    const subs=DB.get('submissions')||[];
+    subs.push(submission);
+    DB.set('submissions',subs);
+    setSubData(submission);
+    setSubmitted(true);
+    try{sendNotification(submission);}catch(e){console.log('Email notification skipped');}
+  };
+
+  const handlePhoto=(e)=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=(ev)=>uf('idPhoto',ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  if(submitted)return(
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#f1f5f9',padding:16}}>
+      <div style={{maxWidth:500,width:'100%',background:'white',borderRadius:24,boxShadow:'0 16px 48px rgba(0,0,0,0.1)',overflow:'hidden',textAlign:'center',padding:'40px 30px'}}>
+        <div style={{width:80,height:80,background:'#f0fdf4',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',border:'3px solid #bbf7d0',fontSize:36}}>✅</div>
+        <h2 style={{fontSize:22,fontWeight:900,color:B.purple,margin:'0 0 8px'}}>تم إتمام العملية بنجاح!</h2>
+        <p style={{fontSize:14,color:'#16a34a',fontWeight:700,marginBottom:16}}>تم رفع طلبكم إلى الإدارة وسيتم مراجعته</p>
+        <div style={{textAlign:'right',background:'#f8fafc',borderRadius:14,padding:16,border:'1px solid #e2e8f0',marginBottom:20}}>
+          <h4 style={{fontSize:13,fontWeight:800,color:B.purple,margin:'0 0 10px'}}>ملخص بياناتكم:</h4>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,fontSize:12}}>
+            {[['الاسم',subData.fullName],['نوع الهوية',subData.idType],['رقم الهوية',subData.idNumber],['الجوال',subData.mobile],['المحافظة',`${subData.birthGov} - ${subData.birthDistrict}`],['الفرع',subData.branch||'—'],['العملات',subData.currencies?.join(', ')],['تاريخ التقديم',subData.submittedAt]].map(([k,v],i)=><div key={i} style={{padding:'4px 6px',background:i%2===0?'white':'transparent',borderRadius:6}}><strong style={{color:'#475569'}}>{k}:</strong> <span style={{color:'#64748b'}}>{v||'—'}</span></div>)}
+          </div>
+        </div>
+        <p style={{fontSize:11,color:'#94a3b8',marginBottom:16}}>سيتم التواصل معكم عبر الرقم المسجل بعد مراجعة الطلب</p>
+        <button onClick={onBack} style={{padding:'12px 30px',background:B.purple,color:'white',border:'none',borderRadius:12,fontSize:14,fontWeight:800}}>↩ العودة للرئيسية</button>
+      </div>
+    </div>
+  );
+
+  const labels=['الشروط','بيانات الهوية','العنوان والتواصل','العملات والخدمات','المفوضون','التوقيعات','رفع الصورة والإرسال'];
+
+  return(
+    <div style={{minHeight:'100vh',background:'#f1f5f9',padding:16}}>
+      {toast&&<Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
+      <div className="no-print" style={{maxWidth:580,margin:'0 auto'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+          <button onClick={onBack} style={{padding:'8px 14px',background:'white',color:'#64748b',border:'1px solid #e2e8f0',borderRadius:10,fontSize:12,fontWeight:700}}>↩ العودة</button>
+        </div>
+        <div style={{background:'white',borderRadius:24,boxShadow:'0 16px 48px rgba(128,42,93,0.1)',overflow:'hidden'}}>
+          <div style={{padding:'20px 24px 16px',borderBottom:'1px solid #f1f5f9'}}>
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}><img src={LOGO} style={{height:42}} alt=""/><div><p style={{margin:0,fontSize:10,fontWeight:800,color:B.orange}}>مرحلة {step} من {T}</p><h2 style={{margin:0,fontSize:17,fontWeight:900,color:B.purple}}>{labels[step-1]}</h2></div></div>
+            <div style={{display:'flex',gap:3}}>{Array.from({length:T},(_,i)=><div key={i} style={{flex:1,height:4,borderRadius:2,background:i<step?B.purple:'#e2e8f0'}}/>)}</div>
+          </div>
+          <div style={{padding:'20px 24px',minHeight:360}}>
+            {step===1&&<div className="fade-in">
+              <div style={{background:'#fffbeb',padding:18,borderRadius:16,borderRight:`5px solid ${B.orange}`,marginBottom:16,maxHeight:280,overflowY:'auto'}}><h3 style={{margin:'0 0 10px',fontSize:14,fontWeight:900,color:B.purple}}>شروط وأحكام فتح الحساب</h3><div style={{fontSize:12,color:'#475569',lineHeight:2}}>{['تعبئة كافة البيانات بدقة.','إرفاق صورة الهوية سارية المفعول.','التوقيع أمام الموظف المختص.','الحساب لغرض الحوالات والمصارفة.','المسؤولية الكاملة عن البيانات.','يحق للمنشأة إغلاق الحساب عند المخالفة.','يُمنع الاستخدام غير المشروع.','تخضع الشروط للتحديث.'].map((t,i)=><p key={i}>{i+1}. {t}</p>)}</div></div>
+              <label style={{display:'flex',alignItems:'center',gap:10,padding:14,background:errs.terms?'#fef2f2':'white',border:`2px solid ${errs.terms?'#fca5a5':fd.termsAccepted?B.purple:'#e2e8f0'}`,borderRadius:14,cursor:'pointer'}}><input type="checkbox" checked={fd.termsAccepted} onChange={e=>uf('termsAccepted',e.target.checked)} style={{width:20,height:20,accentColor:B.purple}}/><span style={{fontSize:13,fontWeight:700}}>أقر بموافقتي على الشروط والأحكام</span></label>
+              {errs.terms&&<p style={{fontSize:11,color:'#ef4444',marginTop:6}}>⚠ {errs.terms}</p>}
+            </div>}
+
+            {step===2&&<div className="fade-in" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <div style={{gridColumn:'span 2'}}><Fld label="الاسم الكامل (الرباعي)" req err={errs.fullName} errMsg={errs.fullName}><input style={inp(errs.fullName)} value={fd.fullName} onChange={e=>uf('fullName',e.target.value)} placeholder={`${settings.minNameWords} كلمات على الأقل`}/></Fld></div>
+              <Fld label="اللقب" req err={errs.nickname} errMsg={errs.nickname}><input style={inp(errs.nickname)} value={fd.nickname} onChange={e=>uf('nickname',e.target.value)}/></Fld>
+              <Fld label="نوع الهوية" req><select style={inp()} value={fd.idType} onChange={e=>uf('idType',e.target.value)}>{Object.keys(settings.idRules).map(t=><option key={t}>{t}</option>)}</select></Fld>
+              <Fld label={`رقم الهوية (${idRule.digits} رقم)`} req err={errs.idNumber} errMsg={errs.idNumber}><input style={inp(errs.idNumber)} value={fd.idNumber} onChange={e=>{const v=e.target.value.replace(/\D/g,'').slice(0,idRule.digits);uf('idNumber',v);}} placeholder={'0'.repeat(idRule.digits)} maxLength={idRule.digits}/><div style={{fontSize:10,color:fd.idNumber.length===idRule.digits?'#16a34a':'#94a3b8',marginTop:2}}>{fd.idNumber.length}/{idRule.digits} رقم</div></Fld>
+              <Fld label="تاريخ الإصدار" req err={errs.idIssueDate}><input type="date" style={inp(errs.idIssueDate)} value={fd.idIssueDate} onChange={e=>uf('idIssueDate',e.target.value)}/></Fld>
+              <Fld label={`تاريخ الانتهاء (تلقائي +${idRule.expiryYears} سنوات)`}><input type="date" style={{...inp(),background:'#f0fdf4'}} value={fd.idExpiry} readOnly/></Fld>
+              <Fld label="تاريخ الميلاد" err={errs.birthDate} errMsg={errs.birthDate}><input type="date" style={inp(errs.birthDate)} value={fd.birthDate} onChange={e=>uf('birthDate',e.target.value)}/>{fd.birthDate&&<div style={{fontSize:10,color:calcAge(fd.birthDate)<settings.minAge?'#ef4444':'#16a34a',marginTop:2}}>العمر: {calcAge(fd.birthDate)} سنة {calcAge(fd.birthDate)<settings.minAge?`(أقل من ${settings.minAge})`:''}</div>}</Fld>
+            </div>}
+
+            {step===3&&<div className="fade-in" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <Fld label="المحافظة" req err={errs.birthGov}><select style={inp(errs.birthGov)} value={fd.birthGov} onChange={e=>uf('birthGov',e.target.value)}><option value="">اختر</option>{Object.keys(regions).map(g=><option key={g}>{g}</option>)}</select></Fld>
+              <Fld label="المديرية"><select style={inp()} value={fd.birthDistrict} onChange={e=>uf('birthDistrict',e.target.value)} disabled={!fd.birthGov}><option value="">اختر</option>{fd.birthGov&&regions[fd.birthGov].map(d=><option key={d}>{d}</option>)}</select></Fld>
+              <div style={{gridColumn:'span 2'}}><Fld label="العنوان التفصيلي"><input style={inp()} value={fd.address} onChange={e=>uf('address',e.target.value)} placeholder="الحي / الشارع"/></Fld></div>
+              <Fld label="رقم الموبايل" req err={errs.mobile}><input style={inp(errs.mobile)} value={fd.mobile} onChange={e=>uf('mobile',e.target.value)} placeholder="7XXXXXXXX"/></Fld>
+              <Fld label="رقم الهاتف"><input style={inp()} value={fd.phone} onChange={e=>uf('phone',e.target.value)}/></Fld>
+              <div style={{gridColumn:'span 2'}}><Fld label="البريد الإلكتروني"><input type="email" style={inp()} value={fd.email} onChange={e=>uf('email',e.target.value)}/></Fld></div>
+              <div style={{gridColumn:'span 2'}}><Fld label="الفرع"><select style={inp()} value={fd.branch} onChange={e=>uf('branch',e.target.value)}><option value="">اختر</option>{settings.branches.map(b=><option key={b}>{b}</option>)}</select></Fld></div>
+            </div>}
+
+            {step===4&&<div className="fade-in">
+              <Fld label="عملات الحساب المطلوبة" req err={errs.currencies} errMsg={errs.currencies}><div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:4}}>{settings.currencies.map(c=><button key={c} onClick={()=>ti('currencies',c)} style={chip(fd.currencies.includes(c))}>{c}</button>)}</div></Fld>
+              <Fld label="وسائل طلب الخدمة"><div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:4}}>{settings.services.map(s=><button key={s} onClick={()=>ti('services',s)} style={chip(fd.services.includes(s))}>{s}</button>)}</div></Fld>
+            </div>}
+
+            {step===5&&<div className="fade-in">
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+                <h4 style={{margin:0,fontSize:14,fontWeight:800,color:B.purple}}>المفوضون</h4>
+                <button onClick={()=>setFd(p=>({...p,authorized:[...p.authorized,{name:'',id:'',phone:'',email:'',permissions:[],signature:null}]}))} style={{padding:'7px 12px',background:B.light,color:B.purple,border:'none',borderRadius:8,fontSize:11,fontWeight:700}}>+ إضافة</button>
+              </div>
+              <div style={{maxHeight:360,overflowY:'auto'}}>{fd.authorized.map((a,i)=><div key={i} style={{padding:14,background:'#f8fafc',borderRadius:14,marginBottom:10,border:'1px solid #e2e8f0',position:'relative'}}>
+                {fd.authorized.length>1&&<button onClick={()=>setFd(p=>({...p,authorized:p.authorized.filter((_,j)=>j!==i)}))} style={{position:'absolute',top:8,left:8,background:'#fef2f2',border:'none',borderRadius:6,padding:3,color:'#ef4444',fontSize:12}}>✕</button>}
+                <p style={{fontSize:12,fontWeight:800,color:B.purple,margin:'0 0 8px'}}>مفوض #{i+1}</p>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+                  <input style={{...inp(),fontSize:12,padding:9}} placeholder="الاسم" value={a.name} onChange={e=>ua(i,'name',e.target.value)}/>
+                  <input style={{...inp(),fontSize:12,padding:9}} placeholder="رقم الهوية" value={a.id} onChange={e=>ua(i,'id',e.target.value)}/>
+                  <input style={{...inp(),fontSize:12,padding:9}} placeholder="الجوال" value={a.phone} onChange={e=>ua(i,'phone',e.target.value)}/>
+                  <input style={{...inp(),fontSize:12,padding:9}} placeholder="الإيميل" value={a.email||''} onChange={e=>ua(i,'email',e.target.value)}/>
+                </div>
+                <div style={{marginTop:6,display:'flex',flexWrap:'wrap',gap:4}}>{perms.map(p=><button key={p} onClick={()=>{const ps=a.permissions||[];ua(i,'permissions',ps.includes(p)?ps.filter(x=>x!==p):[...ps,p]);}} style={{...chip((a.permissions||[]).includes(p)),fontSize:9,padding:'3px 8px'}}>{p}</button>)}</div>
+                <div style={{marginTop:8}}><SigPad label={`توقيع #${i+1}`} onSave={img=>ua(i,'signature',img)}/></div>
+              </div>)}</div>
+            </div>}
+
+            {step===6&&<div className="fade-in">
+              <h4 style={{margin:'0 0 12px',fontSize:14,fontWeight:800,color:B.purple}}>✍ نماذج التوقيع</h4>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:16}}>{[0,1,2].map(i=><SigPad key={i} label={`نموذج (${i+1})`} init={fd.sampleSignatures[i]} onSave={img=>{const s=[...fd.sampleSignatures];s[i]=img;uf('sampleSignatures',s);}}/>)}</div>
+              {errs.mainSignature&&<p style={{fontSize:11,color:'#ef4444',marginBottom:6}}>⚠ {errs.mainSignature}</p>}
+              <SigPad label="التوقيع الرئيسي النهائي (إلزامي) *" init={fd.mainSignature} onSave={img=>uf('mainSignature',img)}/>
+            </div>}
+
+            {step===7&&<div className="fade-in">
+              <h4 style={{margin:'0 0 12px',fontSize:14,fontWeight:800,color:B.purple}}>📷 صورة الهوية</h4>
+              <div style={{border:'2px dashed #cbd5e1',borderRadius:16,padding:20,textAlign:'center',marginBottom:16,background:'#f8fafc'}}>
+                {fd.idPhoto?<div><img src={fd.idPhoto} style={{maxWidth:'100%',maxHeight:200,borderRadius:12,marginBottom:10}} alt=""/><br/><button onClick={()=>uf('idPhoto',null)} style={{padding:'6px 14px',background:'#fef2f2',color:'#dc2626',border:'none',borderRadius:8,fontSize:12,fontWeight:700}}>🗑 إزالة الصورة</button></div>:
+                <div><p style={{color:'#64748b',fontSize:13,marginBottom:10}}>التقط صورة للهوية أو ارفع ملف</p>
+                  <div style={{display:'flex',gap:8,justifyContent:'center'}}>
+                    <label style={{padding:'10px 16px',background:B.purple,color:'white',borderRadius:10,fontSize:12,fontWeight:700,cursor:'pointer'}}>📁 رفع ملف<input type="file" accept="image/*" onChange={handlePhoto} style={{display:'none'}}/></label>
+                    <label style={{padding:'10px 16px',background:B.orange,color:'white',borderRadius:10,fontSize:12,fontWeight:700,cursor:'pointer'}}>📷 كاميرا<input type="file" accept="image/*" capture="environment" onChange={handlePhoto} style={{display:'none'}}/></label>
+                  </div>
+                </div>}
+              </div>
+              <div style={{background:'#f8fafc',borderRadius:14,padding:14,border:'1px solid #e2e8f0',marginBottom:16}}>
+                <h4 style={{fontSize:12,fontWeight:800,color:B.purple,margin:'0 0 8px'}}>ملخص بياناتكم:</h4>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4,fontSize:11}}>
+                  {[['الاسم',fd.fullName],['اللقب',fd.nickname],['نوع الهوية',fd.idType],['رقم الهوية',fd.idNumber],['الإصدار',fd.idIssueDate],['الانتهاء',fd.idExpiry],['الجوال',fd.mobile],['المحافظة',`${fd.birthGov} - ${fd.birthDistrict}`],['العملات',fd.currencies.join(', ')],['الفرع',fd.branch||'—']].map(([k,v],i)=><div key={i}><strong style={{color:'#475569'}}>{k}:</strong> {v||'—'}</div>)}
+                </div>
+              </div>
+              <button onClick={submitForm} style={{width:'100%',padding:16,background:'#25D366',color:'white',border:'none',borderRadius:14,fontSize:16,fontWeight:900,boxShadow:'0 6px 20px rgba(37,211,102,0.3)'}}>✅ إرسال الطلب إلى الإدارة</button>
+            </div>}
+          </div>
+
+          {step<T&&<div style={{padding:'12px 24px 20px',display:'flex',gap:10}}>
+            {step>1&&<button onClick={()=>setStep(s=>s-1)} style={{padding:'12px 16px',background:'#f1f5f9',color:'#64748b',border:'none',borderRadius:12,fontSize:13,fontWeight:700}}>→ السابق</button>}
+            <button onClick={nx} disabled={step===1&&!fd.termsAccepted} style={{flex:1,padding:14,background:(step===1&&!fd.termsAccepted)?'#cbd5e1':B.purple,color:'white',border:'none',borderRadius:12,fontSize:14,fontWeight:900}}>{step===6?'مراجعة وإرسال':'التالي ←'}</button>
+          </div>}
+
+          <div style={{background:'#fafafa',padding:'10px 24px',display:'flex',justifyContent:'space-between',fontSize:9,fontWeight:700,color:'#94a3b8',borderTop:'1px solid #f1f5f9'}}><span>🔒 نظام آمن</span><span>ابن قايد المريسي © {new Date().getFullYear()}</span></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============ PDF DOC (4 pages - same as before but compact) ============
+const PDFDoc=({f,op})=>{
+  const td=today();const rn=genId().toUpperCase();const s=DB.get('settings');
+  const WM=()=><div className="wm"><img src={LOGO} alt=""/></div>;
+  const DM=()=><div className="dm">Eslam Saeed</div>;
+  const Chk=({on})=><span style={{width:16,height:16,border:'2px solid '+B.purple,borderRadius:3,background:on?B.purple:'white',display:'inline-flex',alignItems:'center',justifyContent:'center',color:'white',fontSize:10,fontWeight:900}}>{on?'✓':''}</span>;
+  const FT=({pg})=><div style={{borderTop:'1px solid #ddd',paddingTop:5,display:'flex',justifyContent:'space-between',fontSize:9,color:'#777',marginTop:10}}><div>ابن قايد المريسي للصرافة والتحويلات</div><div>F-03-ACC</div><div>صفحة {pg}/4</div></div>;
+  const FI=({val})=><div style={{border:'1px solid #ccc',height:32,background:'white',borderRadius:4,fontSize:12,padding:'0 8px',display:'flex',alignItems:'center',fontWeight:val?600:400}}>{val||''}</div>;
+  const SL=({icon,text})=><div style={{fontSize:13,fontWeight:800,color:B.purple,marginBottom:8,borderBottom:'1px dashed #ccc',paddingBottom:4,display:'flex',alignItems:'center',gap:8}}><i className={icon} style={{color:B.orange,fontSize:14}}/> {text}</div>;
+
+  return(<div id="pdf-output" style={{display:'flex',flexDirection:'column',alignItems:'center',gap:20}}>
+    {/* Page 1: Cover */}
+    <div className="page-a4"><WM/><div className="cw" style={{padding:'10mm 15mm 5mm'}}>
+      <div style={{textAlign:'center',marginTop:'10mm'}}><div style={{width:180,height:180,margin:'0 auto 10px'}}><img src={LOGO} style={{width:'100%',height:'100%',objectFit:'contain'}} alt=""/></div><h1 style={{fontSize:34,fontWeight:900,color:B.purple,margin:0}}>ابن قايد المريسي للصرافة والتحويلات</h1><div style={{fontSize:16,fontWeight:700,color:B.orange,marginTop:5}}>Ibn Qaid Al-Marisi Exchange</div></div>
+      <div style={{textAlign:'center',margin:'8mm 0'}}><div style={{background:`linear-gradient(to right,${B.purple},#a03c78)`,color:'white',padding:'12px 70px',borderRadius:50,fontSize:30,fontWeight:800,display:'inline-block'}}>ملف حساب عميل</div></div>
+      <div style={{display:'flex',flexDirection:'column',gap:20}}>
+        {[['الفرع',f.branch,'fa-map-marker-alt',false],['اسم العميل',f.fullName,'fa-user-tie',false],['رقم الحساب','','fa-wallet',true]].map(([l,v,ic,acc],i)=><div key={i}><div style={{fontSize:20,fontWeight:800,color:B.purple,display:'flex',alignItems:'center',gap:12,marginBottom:8}}><i className={`fas ${ic}`} style={{color:B.orange,fontSize:22}}/> {l}:</div><div style={{border:`2px solid ${acc?B.orange:'#ddd'}`,background:acc?'rgba(255,251,242,0.9)':'rgba(250,250,250,0.8)',height:55,borderRadius:12,display:'flex',alignItems:'center',padding:'0 20px',fontSize:acc?26:20,fontWeight:700,color:acc?B.purple:'#333',fontFamily:acc?'monospace':'inherit',letterSpacing:acc?3:0}}>{v}</div></div>)}
+      </div>
+      <div style={{textAlign:'center',borderTop:`3px solid ${B.orange}`,paddingTop:15,marginTop:'auto',paddingBottom:'5mm'}}><div style={{display:'flex',justifyContent:'center',flexWrap:'wrap',gap:12,marginBottom:12}}>{['778999567','775122022','773308998','778419081'].map(ph=><div key={ph} style={{background:'#f0f0f0',padding:'6px 18px',borderRadius:30,fontSize:13,fontWeight:700,display:'flex',alignItems:'center',gap:8,border:'1px solid #ddd'}}><i className="fas fa-phone-alt" style={{color:B.purple}}/> {ph}</div>)}</div><div style={{background:B.purple,color:'white',padding:8,borderRadius:8,fontSize:12,fontWeight:700}}>المركز الرئيسي: الضالع - مريس - الجبارة | فرع قعطبة</div></div>
+    </div><DM/></div>
+
+    {/* Page 2: Terms */}
+    <div className="page-a4"><WM/><div className="cw" style={{padding:'12mm 18mm'}}>
+      <div style={{textAlign:'center',borderBottom:`3px solid ${B.purple}`,paddingBottom:10,marginBottom:15}}><div style={{background:'rgba(128,42,93,0.1)',color:B.purple,padding:'8px 30px',borderRadius:10,fontSize:22,fontWeight:900,display:'inline-block',border:`2px solid ${B.purple}`}}>شروط فتح حساب</div></div>
+      <ul style={{fontSize:14,lineHeight:1.7,listStyle:'none',padding:0}}>{[['تعبئة الاستمارة','والتوقيع عليها مع إرفاق صورة البطاقة الشخصية.'],['نماذج التوقيعات','أمام الموظف المختص حصراً.'],['السجل التجاري','ساري المفعول للوكلاء والعملاء.'],['التفويض','لمن سيدير الحسابات.'],['حسن التعامل','تجنب أي تصرف يسيء إلى الثقة.'],['الغرض','الإيداعات والتحويلات والمصارفة فقط.'],['الاستخدام المشروع','يُمنع الاستخدام غير القانوني.'],['مسؤولية المفوضين','يتحمل العميل المسؤولية الكاملة.'],['صلاحية الإغلاق','للمنشأة الحق في إغلاق الحساب.'],['العنوان الرسمي','إخطار خطي خلال 15 يوماً عند التغيير.'],['صحة البيانات','المسؤولية القانونية عن أي بيانات مغلوطة.'],['التحديثات','تخضع الشروط للتحديث.']].map(([t,d],i)=><li key={i} style={{marginBottom:6,paddingRight:18,position:'relative'}}><span style={{position:'absolute',right:0,color:B.orange,fontSize:18}}>▪</span><strong style={{color:B.purple}}>{t}:</strong> {d}</li>)}</ul>
+      <div style={{marginTop:'auto',background:'#fffcf5',border:`2px solid ${B.orange}`,borderRadius:10,padding:18}}>
+        <div style={{fontSize:15,fontWeight:800,textAlign:'center',color:B.purple,borderBottom:'1px dashed #ccc',paddingBottom:8,marginBottom:20}}>تم الاطلاع والموافقة</div>
+        <div style={{display:'flex',justifyContent:'space-between',padding:'0 20px'}}><div style={{width:'40%'}}><span style={{fontSize:13,fontWeight:700,color:'#555'}}>اسم العميل:</span><div style={{borderBottom:'2px dotted #333',height:28,marginTop:8,fontSize:13,fontWeight:700,display:'flex',alignItems:'flex-end',paddingBottom:2}}>{f.fullName}</div></div><div style={{width:'40%'}}><span style={{fontSize:13,fontWeight:700,color:'#555'}}>التوقيع:</span><div style={{borderBottom:'2px dotted #333',height:28,marginTop:8}}>{f.mainSignature&&<img src={f.mainSignature} style={{height:24}} alt=""/>}</div></div></div>
+      </div><FT pg={2}/>
+    </div><DM/></div>
+
+    {/* Page 3: Data */}
+    <div className="page-a4"><WM/><div className="cw" style={{padding:'8mm 12mm',gap:12}}>
+      <div style={{display:'flex',justifyContent:'space-between',borderBottom:`3px solid ${B.purple}`,paddingBottom:8}}><div style={{fontSize:18,fontWeight:900,color:B.purple}}>بيانات العميل</div><div style={{display:'flex',gap:10}}><div style={{border:`1px solid ${B.orange}`,padding:'4px 12px',borderRadius:6,fontSize:11,fontWeight:700,background:'#fffbf2'}}>رقم: {rn}</div><div style={{border:`1px solid ${B.orange}`,padding:'4px 12px',borderRadius:6,fontSize:11,fontWeight:700,background:'#fffbf2'}}>{td}</div></div></div>
+      <div style={{background:'#fdfdfd',border:'1px solid #eee',borderRadius:6,padding:12}}><SL icon="fas fa-user-circle" text="1. البيانات الأساسية"/>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(12,1fr)',gap:10}}>{[[8,'الاسم',f.fullName],[4,'اللقب',f.nickname],[3,'نوع الهوية',f.idType],[3,'رقم الهوية',f.idNumber],[3,'الإصدار',f.idIssueDate],[3,'الانتهاء',f.idExpiry]].map(([sp,l,v],i)=><div key={i} style={{gridColumn:`span ${sp}`}}><span style={{fontSize:10,fontWeight:700,color:'#444'}}>{l}:</span><FI val={v}/></div>)}</div>
+      </div>
+      <div style={{background:'#fdfdfd',border:'1px solid #eee',borderRadius:6,padding:12}}><SL icon="fas fa-map-marker-alt" text="2. العنوان"/>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(12,1fr)',gap:10}}>{[[12,'العنوان',`${f.birthGov||''} ${f.birthDistrict?'- '+f.birthDistrict:''} ${f.address?'- '+f.address:''}`],[4,'الموبايل',f.mobile],[4,'الهاتف',f.phone],[4,'البريد',f.email]].map(([sp,l,v],i)=><div key={i} style={{gridColumn:`span ${sp}`}}><span style={{fontSize:10,fontWeight:700,color:'#444'}}>{l}:</span><FI val={v}/></div>)}</div>
+      </div>
+      <div style={{background:'#fdfdfd',border:'1px solid #eee',borderRadius:6,padding:12}}><SL icon="fas fa-coins" text="3. العملات"/>
+        <div style={{display:'flex',flexWrap:'wrap',gap:16}}>{[...(s?.currencies||[]),'أخرى'].map(c=><div key={c} style={{display:'flex',alignItems:'center',gap:6,fontSize:11,fontWeight:700}}><Chk on={f.currencies?.includes(c)}/>{c}</div>)}</div>
+      </div>
+      <div style={{background:'#fdfdfd',border:'1px solid #eee',borderRadius:6,padding:12}}><SL icon="fas fa-headset" text="4. وسائل الخدمة"/>
+        <div style={{display:'flex',flexWrap:'wrap',gap:16}}>{(s?.services||[]).map(sv=><div key={sv} style={{display:'flex',alignItems:'center',gap:6,fontSize:11,fontWeight:700}}><Chk on={f.services?.includes(sv)}/>{sv}</div>)}</div>
+      </div>
+      <div style={{background:'#fff',border:'1px solid #eee',borderRadius:6,padding:12}}><SL icon="fas fa-signature" text="5. التوقيعات"/>
+        <div style={{border:`2px solid ${B.purple}`,borderRadius:8,padding:12}}><div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16}}>{[0,1,2].map(i=><div key={i} style={{border:'1px dashed #999',height:110,position:'relative',borderRadius:4,background:'#fdfdfd',display:'flex',flexDirection:'column',justifyContent:'flex-end',padding:8}}><div style={{position:'absolute',top:0,right:0,left:0,background:B.orange,color:'white',fontSize:9,padding:2,textAlign:'center',fontWeight:700,borderRadius:'3px 3px 0 0'}}>توقيع ({i+1})</div><div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',paddingTop:16}}>{f.sampleSignatures?.[i]&&<img src={f.sampleSignatures[i]} style={{maxHeight:45,maxWidth:'90%'}} alt=""/>}</div><div style={{fontSize:8,color:'#555',borderTop:'1px dotted #ccc',paddingTop:3}}>{f.fullName} | {td}</div></div>)}</div></div>
+      </div><FT pg={3}/>
+    </div><DM/></div>
+
+    {/* Page 4: Authorized */}
+    <div className="page-a4"><WM/><div className="cw" style={{padding:'8mm 12mm',gap:16,justifyContent:'space-between'}}>
+      <div style={{borderBottom:`3px solid ${B.purple}`,paddingBottom:8}}><div style={{fontSize:18,fontWeight:900,color:B.purple}}>المفوضين والموافقات</div></div>
+      <div><SL icon="fas fa-users-cog" text="6. المفوضون"/>
+        <div style={{border:'1px solid #ccc',borderRadius:6,overflow:'hidden'}}><table style={{width:'100%',borderCollapse:'collapse',fontSize:10}}><thead><tr style={{background:B.purple,color:'white'}}><th style={{padding:8,border:'1px solid #fff',width:'30%'}}>البيانات</th><th style={{padding:8,border:'1px solid #fff',width:'45%'}}>الصلاحيات</th><th style={{padding:8,border:'1px solid #fff',width:'25%'}}>التوقيع</th></tr></thead><tbody>
+          {[0,1].map(i=>{const a=f.authorized?.[i]||{};return<tr key={i}><td style={{border:'1px solid #ddd',padding:8,verticalAlign:'top',lineHeight:1.8}}><strong>الاسم:</strong> {a.name||'....'}<br/><strong>الهوية:</strong> {a.id||'....'}<br/><strong>الهاتف:</strong> {a.phone||'....'}<br/><strong>الإيميل:</strong> {a.email||'....'}</td><td style={{border:'1px solid #ddd',padding:8}}><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>{perms.map(p=><div key={p} style={{display:'flex',alignItems:'center',gap:4,fontSize:9}}><Chk on={a.permissions?.includes(p)}/>{p}</div>)}</div></td><td style={{border:'1px solid #ddd',padding:2,textAlign:'center'}}><div style={{height:90,border:'1px dashed #999',margin:4,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center'}}>{a.signature&&<img src={a.signature} style={{maxHeight:75,maxWidth:'90%'}} alt=""/>}</div></td></tr>;})}
+        </tbody></table></div>
+        <div style={{fontSize:10,color:'#d3161d',fontWeight:700,marginTop:8,textAlign:'center',background:'#fff0f0',padding:6,borderRadius:4,border:'1px dashed #d3161d'}}>⚠ يتحمل صاحب الحساب المسؤولية الكاملة عن تعاملات المفوضين.</div>
+      </div>
+      <div style={{background:'#fdfdfd',border:'1px solid #ddd',borderRadius:6,padding:16}}><SL icon="fas fa-file-signature" text="7. إقرار العميل"/>
+        <div style={{fontSize:11,marginBottom:12,textAlign:'justify',lineHeight:1.6}}>أقر بصحة كافة البيانات وأوافق على تفويض المذكورين أعلاه والالتزام بالشروط.</div>
+        <div style={{display:'flex',justifyContent:'space-between',gap:16}}>{[['الاسم',f.fullName],['التوقيع',null],['التاريخ',td]].map(([l,v],i)=><div key={i} style={{flex:1}}><span style={{fontSize:10,fontWeight:700,color:'#555'}}>{l}:</span><div style={{borderBottom:'1px solid #999',height:28,marginTop:6,display:'flex',alignItems:'flex-end',paddingBottom:2,fontSize:12,fontWeight:700}}>{i===1&&f.mainSignature?<img src={f.mainSignature} style={{height:24}} alt=""/>:v}</div></div>)}</div>
+      </div>
+      <div style={{background:'#eee',padding:12,borderRadius:6,display:'flex',justifyContent:'space-between',alignItems:'flex-end',border:'1px solid #ccc'}}><div style={{fontSize:11,fontWeight:700,width:'50%'}}>✓ مصادقة الموظف:<div style={{fontWeight:400,fontSize:10,marginTop:4}}>تم التوقيع أمامي والمطابقة.</div></div><div style={{display:'flex',gap:16,width:'45%'}}>{[['الموظف',op?.name||op?.email],['التوقيع','']].map(([l,v],i)=><div key={i} style={{flex:1}}><span style={{fontSize:10,fontWeight:700,color:'#555'}}>{l}:</span><div style={{borderBottom:'1px solid #999',height:v?28:36,marginTop:4,fontSize:10}}>{v}</div></div>)}</div></div>
+      <div style={{border:`2px solid ${B.orange}`,borderRadius:8,padding:16,background:'#fffcf5',marginTop:'auto'}}>
+        <div style={{textAlign:'center',fontSize:15,fontWeight:900,color:B.purple,marginBottom:16,textDecoration:'underline'}}>قرار الإدارة</div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',padding:'0 20px'}}><div style={{textAlign:'center'}}><div style={{borderBottom:'1px solid #999',height:28,width:110}}/><span style={{fontSize:10,fontWeight:700,color:B.purple}}>مدير الفرع</span></div><div style={{width:100,height:100,border:`2px dashed ${B.orange}`,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',color:'#aaa',fontSize:11,fontWeight:700,textAlign:'center'}}>ختم<br/>المنشأة</div><div style={{textAlign:'center'}}><div style={{borderBottom:'1px solid #999',height:28,width:110}}/><span style={{fontSize:10,fontWeight:700,color:B.purple}}>المدير العام</span></div></div>
+      </div><FT pg={4}/>
+    </div><DM/></div>
+  </div>);
+};
+
+// ============ ROOT APP ============
+const App=()=>{
+  const[user,setUser]=useState(null);
+  const[showClientForm,setShowClientForm]=useState(false);
+  if(showClientForm)return<ClientForm onBack={()=>setShowClientForm(false)}/>;
+  if(user)return<AdminPanel user={user} onLogout={()=>setUser(null)}/>;
+  return<LoginScreen onLogin={setUser} onPublicForm={()=>setShowClientForm(true)}/>;
+};
+ReactDOM.render(<App/>,document.getElementById('root'));
+</script>
+</body>
+</html>
