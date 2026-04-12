@@ -2,765 +2,659 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ابن قايد المريسي - نظام الحسابات V2.4.1</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ابن قايد المريسي - نظام الحسابات V3.1</title>
 <link rel="icon" href="https://i.ibb.co/Zpqj6KF0/251029-001757.jpg">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Aref+Ruqaa:wght@400;700&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<style>
-/* ================= أنماط واجهة النظام ================= */
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Cairo','Segoe UI',Tahoma,sans-serif;background:#f1f5f9;direction:rtl;overscroll-behavior-y:none;}
-input,select,button,textarea{font-family:inherit}
-input:focus,select:focus,textarea:focus{border-color:#802a5d!important;box-shadow:0 0 0 3px rgba(128,42,93,0.1);outline:none}
-button{transition:all 0.2s;cursor:pointer}button:hover{opacity:0.92;transform:translateY(-1px)}
-::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn 0.35s ease}
-@keyframes slideUp{from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)}}.slide-up{animation:slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700}
-.badge-green{background:#dcfce7;color:#16a34a}.badge-yellow{background:#fef9c3;color:#a16207}.badge-red{background:#fef2f2;color:#dc2626}.badge-blue{background:#dbeafe;color:#1d4ed8}
-.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.15);display:flex;align-items:center;gap:8px}
-.modal-overlay {position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:5000;display:flex;align-items:center;justify-content:center;padding:20px;}
-.modal-content {background:white;width:100%;max-width:600px;border-radius:24px;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,0.2);}
-
-/* ================= أنماط الطباعة والـ PDF ================= */
-:root {--brand-purple: #802a5d; --brand-orange: #f39c12; --text-dark: #1a1a1a; --light-bg: #f9f9f9; --section-bg: #fdfdfd; --border-color: #dcdcdc;}
-@media print {
-    body { background: none !important; padding: 0 !important; margin: 0 !important; }
-    .no-print { display: none !important; }
-    .page-a4 { box-shadow: none !important; border: none !important; margin: 0 !important; width: 210mm !important; height: 297mm !important; page-break-after: always; break-after: page; }
-    .page-a4::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 15px; background: var(--brand-orange) !important; -webkit-print-color-adjust: exact; }
-    .page-a4::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 15px; background: var(--brand-purple) !important; -webkit-print-color-adjust: exact; }
-}
-@page { size: A4 portrait; margin: 0; }
-.page-a4 { background: white; width: 210mm; min-height: 296mm; position: relative; overflow: hidden; display: flex; flex-direction: column; border-top: 15px solid var(--brand-orange); border-bottom: 15px solid var(--brand-purple); font-family: 'Cairo', sans-serif; direction: rtl; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-.designer-mark { position: absolute; bottom: 3px; right: 10px; font-size: 8px; color: #ccc; font-style: italic; font-family: sans-serif; z-index: 1000; opacity: 0.7; }
-.watermark-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; opacity: 0.03; z-index: 0; pointer-events: none; display: flex; justify-content: center; align-items: center; }
-.watermark-img { width: 100%; height: auto; filter: grayscale(100%); }
-.content-wrapper { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; padding: 10mm 15mm; gap: 15px; justify-content: space-between; }
-.page-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--brand-purple); padding-bottom: 10px; margin-bottom: 10px; }
-.header-title { font-size: 20px; font-weight: 900; color: var(--brand-purple); }
-.section-label { font-size: 14px; font-weight: 800; color: var(--brand-purple); margin-bottom: 10px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; display: flex; align-items: center; gap: 8px; }
-.section-label i { color: var(--brand-orange); font-size: 16px; }
-
-/* Elements */
-.cover-header { text-align: center; margin-top: 10mm; }
-.logo-container { width: 180px; height: 180px; margin: 0 auto 10px auto; }
-.logo-img { width: 100%; height: 100%; object-fit: contain; }
-.company-title { font-size: 34px; font-weight: 900; color: var(--brand-purple); margin: 0; line-height: 1.2; }
-.company-subtitle { font-size: 16px; font-weight: 700; color: var(--brand-orange); letter-spacing: 1px; margin-top: 5px; text-transform: uppercase; }
-.file-label-box { text-align: center; width: 100%; margin: 8mm 0; }
-.file-label { background: linear-gradient(to right, var(--brand-purple), #a03c78); color: white; padding: 12px 70px; border-radius: 50px; font-size: 30px; font-weight: 800; display: inline-block; }
-.cover-fields { width: 100%; display: flex; flex-direction: column; gap: 20px; margin-bottom: auto; }
-.field-row { display: flex; flex-direction: column; gap: 8px; }
-.field-label { font-size: 20px; font-weight: 800; color: var(--brand-purple); display: flex; align-items: center; gap: 12px; }
-.field-label i { color: var(--brand-orange); font-size: 22px; }
-.input-display { border: 2px solid #ddd; background: rgba(250, 250, 250, 0.8); height: 55px; border-radius: 12px; display: flex; align-items: center; padding: 0 20px; font-size: 20px; font-weight: 700; color: #333; }
-.account-input { border-color: var(--brand-orange); background: rgba(255, 251, 242, 0.9); font-family: monospace; letter-spacing: 3px; font-size: 26px; color: var(--brand-purple); }
-.cover-footer { text-align: center; border-top: 3px solid var(--brand-orange); padding-top: 15px; margin-top: auto; padding-bottom: 5mm; }
-.contact-grid { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
-.contact-pill { background: #f0f0f0; padding: 6px 18px; border-radius: 30px; font-size: 13px; font-weight: 700; color: var(--text-dark); display: flex; align-items: center; gap: 8px; border: 1px solid #ddd; }
-.contact-pill i { color: var(--brand-purple); }
-.address-bar { background: var(--brand-purple); color: white; padding: 8px; border-radius: 8px; font-size: 12px; font-weight: 700; display: inline-block; width: 100%; }
-
-.title-box { text-align: center; margin-bottom: 20px; border-bottom: 3px solid var(--brand-purple); padding-bottom: 10px; }
-.main-title { background: rgba(128, 42, 93, 0.1); color: var(--brand-purple); padding: 10px 40px; border-radius: 10px; font-size: 24px; font-weight: 900; display: inline-block; border: 2px solid var(--brand-purple); }
-.subtitle { font-size: 14px; font-weight: 700; color: #555; margin-top: 10px; line-height: 1.6; }
-.terms-list { font-size: 16px; line-height: 1.6; color: var(--text-dark); text-align: justify; list-style: none; padding: 0; }
-.terms-list li { margin-bottom: 8px; padding-right: 20px; position: relative; }
-.terms-list li::before { content: '▪'; color: var(--brand-orange); font-size: 20px; position: absolute; right: 0; top: -2px; }
-.terms-list strong { color: var(--brand-purple); }
-.declaration-section { margin-top: auto; background: #fffcf5; border: 2px solid var(--brand-orange); border-radius: 10px; padding: 20px; }
-.declaration-text { font-size: 16px; font-weight: 800; text-align: center; color: var(--brand-purple); margin-bottom: 30px; border-bottom: 1px dashed #ccc; padding-bottom: 10px; }
-.signature-row { display: flex; justify-content: space-between; align-items: flex-end; padding: 0 20px; }
-.sig-block { display: flex; flex-direction: column; gap: 10px; width: 40%; }
-.sig-label { font-size: 14px; font-weight: 700; color: #555; }
-.sig-input { border-bottom: 2px dotted #333; height: 30px; display:flex; align-items:flex-end; padding-bottom:2px; font-weight:700; font-size:14px; }
-
-.page-3-wrapper { padding: 10mm 15mm 0 15mm !important; }
-.header-meta { display: flex; gap: 15px; }
-.meta-field { border: 1px solid var(--brand-orange); padding: 5px 15px; border-radius: 6px; font-size: 12px; font-weight: 700; color: var(--text-dark); background: #fffbf2; }
-.section-container { background: var(--section-bg); border: 1px solid #eee; border-radius: 8px; padding: 12px; }
-.fields-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 10px; }
-.field-group { display: flex; flex-direction: column; }
-.label { font-size: 11px; font-weight: 700; color: #444; margin-bottom: 4px; }
-.input { border: 1px solid #ccc; height: 35px; background: white; border-radius: 4px; font-size: 13px; padding: 0 8px; display:flex; align-items:center; }
-.compact-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-.checkbox-row { display: flex; flex-wrap: wrap; gap: 10px; padding: 2px 0; }
-.checkbox-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #333; }
-.box { width: 16px; height: 16px; border: 2px solid var(--brand-purple); border-radius: 3px; background: white; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900; color:var(--brand-purple); }
-
-.signatures-container-p3 { border: 2px solid var(--brand-purple); border-bottom: none; border-top-left-radius: 10px; border-top-right-radius: 10px; border-bottom-left-radius: 0; border-bottom-right-radius: 0; padding: 15px 15px 0 15px; background: #fff; margin-top: auto; margin-bottom: 0 !important; }
-.sig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-.page-3-sig-card { border: 1px dashed #999; border-bottom: none; height: 180px; position: relative; border-top-left-radius: 6px; border-top-right-radius: 6px; background: #fdfdfd; display: flex; flex-direction: column; justify-content: center; align-items: center; padding-top:20px; }
-.sig-card-header { position: absolute; top: 0; right: 0; left: 0; background: var(--brand-orange); color: white; font-size: 11px; padding: 6px 0; text-align: center; font-weight: 700; border-top-left-radius: 5px; border-top-right-radius: 5px; }
-.footer-small { border-top: 1px solid #ddd; padding-top: 5px; display: flex; justify-content: space-between; font-size: 9px; color: #777; margin-top: 10px; }
-
-.auth-table-container { border: 1px solid #ccc; border-radius: 8px; overflow: hidden; background: #fff; }
-.auth-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-.auth-table th { background: var(--brand-purple); color: white; padding: 10px; border: 1px solid #fff; text-align: center; font-weight: 700; }
-.auth-table td { border: 1px solid #ddd; padding: 10px; vertical-align: top; }
-.permission-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 10px; }
-.perm-item { display: flex; align-items: center; gap: 6px; }
-.legal-note { font-size: 11px; color: #d3161d; font-weight: 700; margin-top: 10px; text-align: center; background: #fff0f0; padding: 8px; border-radius: 6px; border: 1px dashed #d3161d; }
-.approval-section { background: var(--section-bg); border: 1px solid #ddd; border-radius: 8px; padding: 20px; }
-.approval-text { font-size: 12px; margin-bottom: 15px; text-align: justify; line-height: 1.6; color: #333; }
-.approval-grid { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 15px; gap: 20px; }
-.field-line { display: flex; flex-direction: column; gap: 8px; flex: 1; }
-.line { border-bottom: 1px solid #999; height: 30px; display:flex; align-items:flex-end; padding-bottom:2px; font-weight:700; font-size:12px; }
-.lbl { font-size: 11px; font-weight: 700; color: #555; }
-.employee-auth { background: #eee; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-end; border: 1px solid #ccc; }
-.admin-decision { border: 2px solid var(--brand-orange); border-radius: 10px; padding: 20px; background: #fffcf5; margin-top: auto; }
-.admin-title { text-align: center; font-size: 16px; font-weight: 900; color: var(--brand-purple); margin-bottom: 20px; text-decoration: underline; }
-.admin-grid { display: flex; justify-content: space-between; align-items: flex-end; padding: 0 30px; }
-.stamp-box { width: 120px; height: 120px; border: 2px dashed var(--brand-orange); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 12px; font-weight: 700; background: white; text-align:center; }
-
-/* تحسين مظهر الحقول */
-input, select, textarea { font-size: 15px !important; padding: 12px 14px !important; }
-.input-display, .input { font-size: 15px; }
-</style>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="geo-data.js"></script>
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel">
-const {useState, useRef, useEffect} = React;
 
-const B = {purple:'#802a5d', orange:'#f39c12', dark:'#4a1a35', light:'#f8f0f5'};
+<!-- ============================================================ -->
+<!-- MODULE 1: Database, Helpers & Config (V3.1)                   -->
+<!-- ============================================================ -->
+<script type="text/babel">
+const {useState,useRef,useEffect,useCallback,useMemo} = React;
+const B = {purple:'#802a5d',orange:'#f39c12',dark:'#4a1a35',light:'#f8f0f5',ink:'#1a237e'};
 const LOGO = "https://i.ibb.co/Zpqj6KF0/251029-001757.jpg";
 
-// ============ بيانات الجغرافيا العالمية (مدمجة) ============
-const worldGeoData = {
-  "اليمن": {
-    "أمانة العاصمة": { "صنعاء القديمة": ["حي صنعاء القديمة"], "الوحدة": ["حي الوحدة"], "السبعين": ["حي السبعين"], "التحرير": ["حي التحرير"], "معين": ["حي معين"], "الثورة": ["حي الثورة"], "شعوب": ["حي شعوب"], "الصافية": ["حي الصافية"], "آزال": ["حي آزال"], "بني الحارث": ["حي بني الحارث"] },
-    "محافظة صنعاء": { "بني مطر": ["شهاب الأسفل", "شهاب الأعلى"], "سنحان وبني بهلول": ["سنحان", "وادي الأجبار"] },
-    "محافظة عدن": { "صيرة (كريتر)": ["صيرة"], "المعلا": ["المعلا"], "التواهي": ["التواهي", "القلوعة"], "خور مكسر": ["خور مكسر"], "الشيخ عثمان": ["الشيخ عثمان", "الممدارة"], "المنصورة": ["المنصورة", "القاهرة"], "دار سعد": ["دار سعد"], "البريقة": ["البريقة", "مدينة الشعب"] },
-    "محافظة تعز": { "القاهرة": ["حي القاهرة"], "المظفر": ["حي المظفر"], "صالة": ["حي صالة"] },
-    "محافظة الحديدة": { "الحوك": ["حي الحوك"], "الميناء": ["حي الميناء"], "الحالي": ["حي الحالي"] },
-    "محافظة حضرموت": { "المكلا": ["حي المكلا"], "الشحر": ["مدينة الشحر", "الحامي"], "سيئون": ["مدينة سيئون", "تاربة"] },
-    "محافظة إب": { "الظهار": ["حي الظهار"], "المشنة": ["حي المشنة"], "جبلة": ["جبلة", "الربادي"] },
-    "محافظة أبين": { "زنجبار": ["زنجبار"], "خنفر": ["جعار", "الكود"] },
-    "محافظة الضالع": { "الضالع": ["مدينة الضالع"], "قعطبة": ["مدينة قعطبة", "مريس"], "دمت": ["مدينة دمت"] }
-  },
-  "المملكة العربية السعودية": {
-    "منطقة الرياض": { "الرياض": ["الرياض", "الدرعية"], "الخرج": ["السلمية", "الدلم"] },
-    "منطقة مكة المكرمة": { "جدة": ["جدة", "أبحر"], "مكة المكرمة": ["مكة", "العزيزية"] },
-    "المنطقة الشرقية": { "الدمام": ["الدمام", "الخبر"], "الأحساء": ["الهفوف", "المبرز"] }
-  },
-  "الإمارات العربية المتحدة": {
-    "إمارة أبوظبي": { "أبوظبي": ["مدينة أبوظبي"], "العين": ["مدينة العين"] },
-    "إمارة دبي": { "دبي": ["ديرة", "بر دبي", "الكرامة"] }
-  },
-  "جمهورية مصر العربية": {
-    "محافظة القاهرة": { "مدينة نصر": ["مدينة نصر"], "مصر الجديدة": ["مصر الجديدة"] },
-    "محافظة الجيزة": { "الدقي": ["الدقي"], "العجوزة": ["العجوزة"], "الهرم": ["الهرم"] }
-  },
-  "الولايات المتحدة الأمريكية": {
-    "ولاية كاليفورنيا": { "لوس أنجلوس": ["لوس أنجلوس", "لونغ بيتش"], "سان دييغو": ["سان دييغو"] },
-    "ولاية نيويورك": { "نيويورك": ["مانهاتن", "بروكلين", "كوينز"] },
-    "ولاية تكساس": { "هيوستن": ["هيوستن"], "دالاس": ["دالاس"] }
-  },
-  "المملكة المتحدة": {
-    "إنجلترا": { "لندن الكبرى": ["لندن", "وستمنستر"], "مانشستر الكبرى": ["مانشستر"] }
-  },
-  "ألمانيا": {
-    "برلين": { "برلين": ["ميته", "نويكولن"] },
-    "بافاريا": { "ميونخ": ["ميونخ"] }
-  }
-};
-
-// قائمة رموز الدول (مبسطة)
-const countryCodes = [
-  { name: "اليمن", code: "+967" },
-  { name: "السعودية", code: "+966" },
-  { name: "الإمارات", code: "+971" },
-  { name: "قطر", code: "+974" },
-  { name: "البحرين", code: "+973" },
-  { name: "الكويت", code: "+965" },
-  { name: "عمان", code: "+968" },
-  { name: "مصر", code: "+20" },
-  { name: "الأردن", code: "+962" },
-  { name: "الولايات المتحدة", code: "+1" },
-  { name: "المملكة المتحدة", code: "+44" },
-  { name: "ألمانيا", code: "+49" }
-];
-
-// ============ قاعدة البيانات ============
+// ===== DATABASE =====
 const DB = {
-  get: (k) => {try{return JSON.parse(localStorage.getItem('iq_'+k))}catch{return null}},
-  set: (k, v) => {localStorage.setItem('iq_'+k, JSON.stringify(v))},
-  init: () => {
-    if(!DB.get('initialized')){
-      const currYear = new Date().getFullYear();
-      DB.set('admin', {username:'Eslam saeed', password:'775122022', role:'admin'});
-      DB.set('users', []);
-      DB.set('submissions', []);
-      DB.set('settings', {
-        systemActive: true,
-        whatsappNumber: '+967775122022',
-        branches: ["المركز الرئيسي - الضالع","فرع مريس","فرع دمت","فرع قعطبة"],
-        currencies: ['ريال يمني','ريال سعودي','دولار أمريكي','درهم إماراتي','يورو'],
-        services: ['الحضور الشخصي','الاتصال الهاتفي','رسائل SMS','تطبيق WhatsApp'],
-        countries: Object.keys(worldGeoData),
-        legalForms: ["مؤسسة فردية", "شركة ذات مسؤولية محدودة", "شركة تضامنية", "شركة مساهمة"],
-        dateRanges: {
-            issueDate: { min: currYear - 15, max: currYear },
-            birthDate: { min: 1950, max: 2012 }
-        },
-        nameFieldCount: 3,
-        idRules: {
-          'بطاقة شخصية ذكية': {digits: 12, expiryYears: 10},
-          'بطاقة شخصية': {digits: 11, expiryYears: 10},
-          'جواز سفر': {digits: 8, expiryYears: 6},
-          'بطاقة عائلية': {digits: 11, expiryYears: 10}
-        },
-        requiredFields: ['names', 'nickname', 'idType', 'idNumber', 'idIssueDate', 'idIssuePlace', 'birthDate', 'country', 'birthGov', 'mobile', 'branch', 'currencies', 'mainSignature', 'photos', 'sampleSignatures']
-      });
-      DB.set('initialized', true);
-    }
+  get:(k)=>{try{return JSON.parse(localStorage.getItem('iq3_'+k))}catch{return null}},
+  set:(k,v)=>{localStorage.setItem('iq3_'+k,JSON.stringify(v))},
+  reset:()=>{Object.keys(localStorage).filter(k=>k.startsWith('iq3_')).forEach(k=>localStorage.removeItem(k));DB.init();},
+  init:()=>{
+    if(DB.get('v31_init'))return;
+    const Y=new Date().getFullYear();
+    DB.set('admin',{username:'Eslam saeed',password:'775122022',role:'admin'});
+    DB.set('users',[]);DB.set('submissions',[]);DB.set('seqCounter',0);
+    DB.set('settings',{
+      systemActive:true,
+      notifyEmail:'Alwageh717@gmail.com',
+      whatsappNumber:'967775122022',
+      whatsappTemplate:'السلام عليكم،\nطلب فتح حساب جديد:\nالاسم: {name}\nالرقم المرجعي: {id}\nالفرع: {branch}\nالجوال: {mobile}',
+      emailjs:{serviceId:'',templateId:'',publicKey:''},
+      branches:["المركز الرئيسي - الضالع","فرع مريس","فرع دمت","فرع قعطبة"],
+      currencies:['ريال يمني','ريال سعودي','دولار أمريكي','درهم إماراتي','يورو'],
+      services:['الحضور الشخصي','الاتصال الهاتفي','رسائل SMS','تطبيق WhatsApp','البريد الإلكتروني'],
+      legalForms:['مؤسسة فردية','شركة ذات مسؤولية محدودة','شركة تضامنية','شركة مساهمة'],
+      countries:typeof worldGeoData!=='undefined'?Object.keys(worldGeoData):['اليمن'],
+      dateRanges:{issueDate:{min:Y-15,max:Y},birthDate:{min:1950,max:Y-14}},
+      minNameWords:4,minAge:14,
+      idRules:{
+        'بطاقة شخصية':{digits:11,expiryYears:10,expiryMinusDay:true},
+        'بطاقة ذكية':{digits:12,expiryYears:6,expiryMinusDay:false},
+        'جواز سفر':{digits:8,expiryYears:6,expiryMinusDay:false},
+        'بطاقة عائلية':{digits:11,expiryYears:10,expiryMinusDay:false}
+      },
+      requiredFields:['names','nickname','idType','idNumber','idIssueDate','idIssuePlace','birthDate','country','birthGov','mobile','branch','currencies','mainSignature','sampleSignatures','photos'],
+      allFields:{names:'الاسم',nickname:'اللقب',businessName:'الاسم التجاري',businessType:'نوع النشاط',legalForm:'الشكل القانوني',idType:'نوع الهوية',idNumber:'رقم الهوية',idIssueDate:'تاريخ الإصدار',idIssuePlace:'مكان الإصدار',birthDate:'تاريخ الميلاد',country:'الدولة',birthGov:'المحافظة',birthDistrict:'المديرية',address:'العنوان',mobile:'الجوال',phone:'الهاتف',email:'البريد',branch:'الفرع',currencies:'العملات',services:'الخدمات',mainSignature:'التوقيع الرئيسي',sampleSignatures:'نماذج التوقيعات',photos:'صور الهوية'},
+      pdfSettings:{
+        phones:['778999567','775122022','773308998','778419081'],
+        footerAddress:'المركز الرئيسي: الضالع - مريس - الجبارة | فرع قعطبة',
+        declarationText:'أقر أنا الموقع أدناه بصحة كافة البيانات الواردة في هذا الطلب، وأوافق على تفويض الأشخاص المذكورين أعلاه بالصلاحيات المحددة، كما أقر باطلاعي وموافقتي على الشروط والأحكام العامة لفتح الحساب والالتزام بها.'
+      }
+    });
+    DB.set('v31_init',true);
   }
 };
 DB.init();
 
-// ============ المساعدات ============
-const today = () => new Date().toLocaleDateString('ar-YE',{year:'numeric',month:'long',day:'numeric'});
-const isoDate = () => new Date().toISOString().split('T')[0];
-const addYears = (dateStr, years) => {
-  if(!dateStr || dateStr.includes('--')) return '';
-  const d = new Date(dateStr); d.setFullYear(d.getFullYear() + years);
-  return d.toISOString().split('T')[0];
+// Initialize EmailJS
+try{const ejs=DB.get('settings')?.emailjs;if(ejs?.publicKey&&window.emailjs)window.emailjs.init(ejs.publicKey);}catch(e){console.warn('EmailJS init skipped:',e);}
+
+// ===== HELPERS =====
+const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const todayAr=()=>new Date().toLocaleDateString('ar-YE',{year:'numeric',month:'long',day:'numeric'});
+const isoDate=()=>new Date().toISOString().split('T')[0];
+const addYears=(d,y,minus)=>{if(!d||!/^\d{4}-\d{2}-\d{2}$/.test(d))return '';const dt=new Date(d);dt.setFullYear(dt.getFullYear()+y);if(minus)dt.setDate(dt.getDate()-1);return dt.toISOString().split('T')[0];};
+const calcAge=(d)=>{if(!d||!/^\d{4}-\d{2}-\d{2}$/.test(d))return 99;const b=new Date(d),t=new Date();let a=t.getFullYear()-b.getFullYear();if(t.getMonth()<b.getMonth()||(t.getMonth()===b.getMonth()&&t.getDate()<b.getDate()))a--;return a;};
+const nextSeqId=()=>{const Y=new Date().getFullYear();let c=DB.get('seqCounter')||0;c++;DB.set('seqCounter',c);return `${Y}-${String(c).padStart(4,'0')}`;};
+const getGeoProvinces=(c)=>{if(!c||typeof worldGeoData==='undefined'||!worldGeoData[c])return[];return Object.keys(worldGeoData[c]);};
+const getGeoDistricts=(c,p)=>{if(!c||!p||typeof worldGeoData==='undefined')return[];const pv=worldGeoData[c]?.[p];if(!pv)return[];return Array.isArray(pv)?pv:Object.keys(pv);};
+const getGeoAreas=(c,p,d)=>{if(!c||!p||!d||typeof worldGeoData==='undefined')return[];const dv=worldGeoData[c]?.[p]?.[d];return Array.isArray(dv)?dv:[];};
+
+const sendNotification=(sub)=>{
+  const s=DB.get('settings');
+  // 1) Try EmailJS
+  if(s.emailjs?.serviceId&&s.emailjs?.templateId&&s.emailjs?.publicKey&&window.emailjs){
+    try{
+      window.emailjs.send(s.emailjs.serviceId,s.emailjs.templateId,{
+        to_email:s.notifyEmail,client_name:sub.fullName,client_id:sub.idNumber,
+        client_mobile:sub.mobile,branch:sub.branch||'—',ref_number:sub.id,date:todayAr()
+      }).then(()=>console.log('EmailJS sent')).catch(e=>console.warn('EmailJS failed:',e));
+    }catch(e){console.warn('EmailJS error:',e);}
+  }
+  // 2) Fallback: mailto
+  const subj=encodeURIComponent(`طلب فتح حساب - ${sub.fullName} - ${sub.id}`);
+  const body=encodeURIComponent(`السلام عليكم،\nطلب جديد:\nالاسم: ${sub.fullName}\nالهوية: ${sub.idNumber}\nالجوال: ${sub.mobile}\nالفرع: ${sub.branch||'—'}\nالمرجع: ${sub.id}\nالتاريخ: ${todayAr()}`);
+  window.open(`mailto:${s.notifyEmail}?subject=${subj}&body=${body}`,'_blank');
 };
 
-const ALL_FIELDS = {
-    names: 'الاسم الشخصي', nickname: 'اللقب العائلي', businessName: 'الاسم التجاري', businessType: 'نوع النشاط', legalForm: 'الشكل القانوني',
-    idType: 'نوع الهوية', idNumber: 'رقم الهوية', idIssueDate: 'تاريخ الإصدار', idIssuePlace: 'مكان الإصدار', birthDate: 'تاريخ الميلاد',
-    country: 'الدولة', birthGov: 'المحافظة', birthDistrict: 'المديرية', address: 'العنوان التفصيلي/المنطقة', mobile: 'رقم الجوال',
-    phone: 'رقم الهاتف', email: 'البريد الإلكتروني', branch: 'الفرع المعتمد', currencies: 'العملات المطلوبة', services: 'وسائل الخدمة',
-    mainSignature: 'التوقيع الرئيسي', photos: 'مرفقات الهوية', sampleSignatures: 'نماذج التوقيعات'
+const sendWhatsApp=(sub)=>{
+  const s=DB.get('settings');
+  const msg=(s.whatsappTemplate||'طلب جديد: {name} - {id}').replace('{name}',sub.fullName||'').replace('{id}',sub.id||'').replace('{branch}',sub.branch||'—').replace('{mobile}',sub.mobile||'');
+  window.open(`https://wa.me/${s.whatsappNumber}?text=${encodeURIComponent(msg)}`,'_blank');
 };
 
-// ============ واجهة المستخدم المشتركة ============
-const inp = (err) => ({width:'100%', padding:'11px 13px', background:err?'#fef2f2':'#f8fafc', border:`1.5px solid ${err?'#fca5a5':'#e2e8f0'}`, borderRadius:12, outline:'none', fontSize:15, boxSizing:'border-box'});
-const chip = (on) => ({padding:'8px 14px', borderRadius:10, border:`1.5px solid ${on?B.purple:'#e2e8f0'}`, background:on?B.purple:'white', color:on?'white':'#64748b', fontSize:13, fontWeight:700, cursor:'pointer'});
-const Fld = ({label, req, err, errMsg, children}) => <div style={{marginBottom:10}}><label style={{display:'flex',alignItems:'center',gap:4,fontSize:13,fontWeight:700,color:err?'#ef4444':'#64748b',marginBottom:3}}>{label}{req&&<span style={{color:'#ef4444'}}>*</span>}{err&&<span style={{fontSize:10,color:'#ef4444',background:'#fef2f2',padding:'1px 6px',borderRadius:4}}>⚠ {errMsg||'مطلوب'}</span>}</label>{children}</div>;
-const Toast = ({msg, type, onClose}) => {
-  useEffect(()=>{const t=setTimeout(onClose,4000);return()=>clearTimeout(t);},[]);
-  const colors = {success:{bg:'#dcfce7',color:'#16a34a',icon:'✓'}, error:{bg:'#fef2f2',color:'#dc2626',icon:'✕'}, info:{bg:'#dbeafe',color:'#1d4ed8',icon:'ℹ'}};
-  const c = colors[type] || colors.info;
-  return <div className="toast" style={{background:c.bg,color:c.color}}><span style={{fontSize:16}}>{c.icon}</span>{msg}</div>;
+const countryCodes=[{name:"اليمن",code:"+967"},{name:"السعودية",code:"+966"},{name:"الإمارات",code:"+971"},{name:"قطر",code:"+974"},{name:"البحرين",code:"+973"},{name:"الكويت",code:"+965"},{name:"عمان",code:"+968"},{name:"مصر",code:"+20"},{name:"الأردن",code:"+962"},{name:"الولايات المتحدة",code:"+1"},{name:"المملكة المتحدة",code:"+44"},{name:"ألمانيا",code:"+49"}];
+const perms=['السحب النقدي / إرسال الحوالات','الاطلاع على الرصيد','طلب كشف حساب','التحويل لأشخاص آخرين','التواصل لإرسال/طلب حوالات','كافة الصلاحيات'];
+</script>
+
+<!-- ============================================================ -->
+<!-- MODULE 2: Shared UI Components (V3.1)                         -->
+<!-- ============================================================ -->
+<script type="text/babel">
+const inp=(err)=>({width:'100%',padding:'11px 13px',background:err?'#fef2f2':'#f8fafc',border:`1.5px solid ${err?'#fca5a5':'#e2e8f0'}`,borderRadius:12,outline:'none',fontSize:15,boxSizing:'border-box'});
+const chip=(on)=>({padding:'8px 14px',borderRadius:10,border:`1.5px solid ${on?B.purple:'#e2e8f0'}`,background:on?B.purple:'white',color:on?'white':'#64748b',fontSize:13,fontWeight:700,cursor:'pointer'});
+const Fld=({label,req,err,errMsg,children})=><div style={{marginBottom:10}}><label style={{display:'flex',alignItems:'center',gap:4,fontSize:13,fontWeight:700,color:err?'#ef4444':'#64748b',marginBottom:3}}>{label}{req&&<span style={{color:'#ef4444'}}>*</span>}{err&&<span style={{fontSize:10,color:'#ef4444',background:'#fef2f2',padding:'1px 6px',borderRadius:4}}>⚠ {errMsg||'مطلوب'}</span>}</label>{children}</div>;
+const Toast=({msg,type,onClose})=>{useEffect(()=>{const t=setTimeout(onClose,4000);return()=>clearTimeout(t);},[]);const c={success:{bg:'#dcfce7',color:'#16a34a',icon:'✓'},error:{bg:'#fef2f2',color:'#dc2626',icon:'✕'},info:{bg:'#dbeafe',color:'#1d4ed8',icon:'ℹ'}}[type]||{bg:'#dbeafe',color:'#1d4ed8',icon:'ℹ'};return<div className="toast" style={{background:c.bg,color:c.color}}><span style={{fontSize:16}}>{c.icon}</span>{msg}</div>;};
+
+// ===== Progress Steps Bar =====
+const ProgressSteps=({current,total,labels})=>{
+  const icons=['📋','👤','🪪','📍','💰','✍','📷'];
+  return(<div>
+    <div className="progress-steps">{Array.from({length:total},(_,i)=>{
+      const done=i<current-1;const active=i===current-1;
+      return<div key={i} className="progress-step">
+        <div className={`progress-dot ${done?'completed':active?'active':''}`}>{done?'✓':icons[i]||i+1}</div>
+        <div className={`progress-label ${done?'completed':active?'active':''}`}>{labels?.[i]||''}</div>
+      </div>;
+    })}</div>
+    <div className="progress-bar-track"><div className="progress-bar-fill" style={{width:`${((current-1)/(total-1))*100}%`}}/></div>
+  </div>);
 };
 
-// ============ منتقي التاريخ المحسن ============
-const DatePicker = ({ value, onChange, err, minY, maxY }) => {
-    const [day, setDay] = useState('');
-    const [month, setMonth] = useState('');
-    const [year, setYear] = useState('');
-
-    useEffect(() => {
-        if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-            const parts = value.split('-');
-            setYear(parts[0]);
-            setMonth(String(parseInt(parts[1])));
-            setDay(String(parseInt(parts[2])));
-        } else if (!value) {
-            setDay(''); setMonth(''); setYear('');
-        }
-    }, [value]);
-
-    const handlePartChange = (part, newValue) => {
-        let newDay = day, newMonth = month, newYear = year;
-        if (part === 'day') { setDay(newValue); newDay = newValue; }
-        if (part === 'month') { setMonth(newValue); newMonth = newValue; }
-        if (part === 'year') { setYear(newValue); newYear = newValue; }
-
-        if (newYear && newMonth && newDay) {
-            const daysInMonth = new Date(newYear, newMonth, 0).getDate();
-            if (parseInt(newDay) <= daysInMonth) {
-                onChange(`${newYear}-${String(newMonth).padStart(2, '0')}-${String(newDay).padStart(2, '0')}`);
-            } else {
-                setDay('');
-            }
-        }
-    };
-
-    const style = {width:'100%', padding:'10px', background:err?'#fef2f2':'#f8fafc', border:`1.5px solid ${err?'#fca5a5':'#e2e8f0'}`, borderRadius:8, outline:'none', fontSize:15};
-    const years = []; for(let i = maxY; i >= minY; i--) years.push(i);
-    const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
-    const daysInSelectedMonth = year && month ? new Date(year, month, 0).getDate() : 31;
-    const days = Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1);
-
-    return (
-        <div>
-            <div style={{display:'flex', gap:6}}>
-                <select style={{...style, flex:1.2}} value={day} onChange={e => handlePartChange('day', e.target.value)}>
-                    <option value="">اليوم</option>
-                    {days.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
-                <select style={{...style, flex:1.5}} value={month} onChange={e => handlePartChange('month', e.target.value)}>
-                    <option value="">الشهر</option>
-                    {monthNames.map((name, i) => <option key={i+1} value={i+1}>{name}</option>)}
-                </select>
-                <select style={{...style, flex:1.5}} value={year} onChange={e => handlePartChange('year', e.target.value)}>
-                    <option value="">السنة</option>
-                    {years.map(yr => <option key={yr} value={yr}>{yr}</option>)}
-                </select>
-            </div>
-            {value && /^\d{4}-\d{2}-\d{2}$/.test(value) && 
-                <div style={{marginTop:8, fontSize:14, fontWeight:700, color:B.purple, background:'#f0fdf4', padding:'8px 12px', borderRadius:8, textAlign:'center'}}>
-                    التاريخ المحدد: {new Date(value).toLocaleDateString('ar-YE', {year:'numeric', month:'long', day:'numeric'})}
-                </div>
-            }
-        </div>
-    );
+// ===== DatePicker =====
+const DatePicker=({value,onChange,err,minY,maxY})=>{
+  const[day,setDay]=useState('');const[month,setMonth]=useState('');const[year,setYear]=useState('');const init=useRef(false);
+  useEffect(()=>{if(value&&/^\d{4}-\d{2}-\d{2}$/.test(value)){const p=value.split('-');setYear(p[0]);setMonth(String(parseInt(p[1])));setDay(String(parseInt(p[2])));}else if(!value&&init.current){setDay('');setMonth('');setYear('');}init.current=true;},[value]);
+  const handleChange=(part,val)=>{let d=day,m=month,y=year;if(part==='day'){setDay(val);d=val;}if(part==='month'){setMonth(val);m=val;}if(part==='year'){setYear(val);y=val;}if(y&&m&&d){const dim=new Date(parseInt(y),parseInt(m),0).getDate();if(parseInt(d)<=dim)onChange(`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`);}else if(!y&&!m&&!d)onChange('');};
+  const style={width:'100%',padding:'10px',background:err?'#fef2f2':'#f8fafc',border:`1.5px solid ${err?'#fca5a5':'#e2e8f0'}`,borderRadius:8,outline:'none',fontSize:15};
+  const years=[];for(let i=(maxY||2026);i>=(minY||1950);i--)years.push(i);
+  const months=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+  const dim=year&&month?new Date(parseInt(year),parseInt(month),0).getDate():31;
+  return(<div><div style={{display:'flex',gap:6}}>
+    <select style={{...style,flex:1}} value={day} onChange={e=>handleChange('day',e.target.value)}><option value="">اليوم</option>{Array.from({length:dim},(_,i)=><option key={i+1} value={i+1}>{i+1}</option>)}</select>
+    <select style={{...style,flex:1.3}} value={month} onChange={e=>handleChange('month',e.target.value)}><option value="">الشهر</option>{months.map((n,i)=><option key={i+1} value={i+1}>{n}</option>)}</select>
+    <select style={{...style,flex:1.3}} value={year} onChange={e=>handleChange('year',e.target.value)}><option value="">السنة</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select>
+  </div>{value&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&<div style={{marginTop:6,fontSize:13,fontWeight:700,color:B.purple,background:'#f0fdf4',padding:'6px 10px',borderRadius:8,textAlign:'center'}}>{new Date(value).toLocaleDateString('ar-YE',{year:'numeric',month:'long',day:'numeric'})}</div>}</div>);
 };
 
-// ============ نافذة التوقيع ============
-const SignatureModal = ({ label, onSave, onClose, init }) => {
-  const ref = useRef(null); const [dr, setDr] = useState(false); const [has, setHas] = useState(!!init);
-  
-  useEffect(() => {
-    const canvas = ref.current; canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight;
-    const ctx = canvas.getContext('2d'); ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = B.purple;
-    if(init){const img = new Image(); img.onload = () => ctx.drawImage(img,0,0, canvas.width, canvas.height); img.src = init; setHas(true);}
-  }, []);
-
-  const gp = (e) => {const c=ref.current, r=c.getBoundingClientRect(); const cx=e.clientX??(e.touches?.[0]?.clientX); const cy=e.clientY??(e.touches?.[0]?.clientY); return {x:cx-r.left, y:cy-r.top};};
-  const st = (e) => {e.preventDefault(); const p=gp(e); ref.current.getContext('2d').beginPath(); ref.current.getContext('2d').moveTo(p.x, p.y); setDr(true);};
-  const mv = (e) => {e.preventDefault(); if(!dr) return; const p=gp(e); const ctx=ref.current.getContext('2d'); ctx.lineTo(p.x, p.y); ctx.stroke(); setHas(true);};
-  const en = () => {if(dr) setDr(false);};
-  const cl = () => {ref.current.getContext('2d').clearRect(0,0,ref.current.width,ref.current.height); setHas(false);};
-  
-  return (
-    <div className="modal-overlay">
-      <div className="modal-content slide-up" style={{display:'flex', flexDirection:'column', height:'80vh', maxHeight:'500px'}}>
-        <div style={{background:B.purple, color:'white', padding:'16px 20px', display:'flex', justifyContent:'space-between', alignItems:'center'}}><h3 style={{margin:0, fontSize:18, fontWeight:800}}>لوحة التوقيع: {label}</h3><button onClick={onClose} style={{background:'none', border:'none', color:'white', fontSize:24}}>&times;</button></div>
-        <div style={{flex:1, background:'#f8fafc', position:'relative', cursor:'crosshair'}}>
-          {!has && <div style={{position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none', color:'#cbd5e1', fontSize:32, fontWeight:900, opacity:0.5}}>وقّع هنا في المساحة الفارغة</div>}
-          <canvas ref={ref} style={{width:'100%', height:'100%', touchAction:'none'}} onMouseDown={st} onMouseMove={mv} onMouseUp={en} onMouseLeave={en} onTouchStart={st} onTouchMove={mv} onTouchEnd={en}/>
-        </div>
-        <div style={{padding:'16px', display:'flex', gap:'12px', background:'white', borderTop:'1px solid #e2e8f0'}}>
-          <button onClick={cl} style={{flex:1, padding:'14px', background:'#fef2f2', color:'#dc2626', border:'none', borderRadius:'12px', fontSize:16, fontWeight:800}}>🔄 إعادة المحاولة</button>
-          <button onClick={()=>{if(has) onSave(ref.current.toDataURL()); onClose();}} disabled={!has} style={{flex:2, padding:'14px', background:has?B.purple:'#cbd5e1', color:'white', border:'none', borderRadius:'12px', fontSize:16, fontWeight:800}}>✅ حفظ التوقيع</button>
-        </div>
-      </div>
-    </div>
-  );
+// ===== Signature Modal =====
+const SignatureModal=({label,onSave,onClose,init})=>{
+  const ref=useRef(null);const[dr,setDr]=useState(false);const[has,setHas]=useState(!!init);
+  useEffect(()=>{const c=ref.current,p=c.parentElement;c.width=p.clientWidth;c.height=p.clientHeight;const ctx=c.getContext('2d');ctx.lineWidth=3;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle=B.purple;if(init){const img=new Image();img.onload=()=>{ctx.drawImage(img,0,0,c.width,c.height);setHas(true);};img.src=init;}},[]);
+  const gp=(e)=>{const r=ref.current.getBoundingClientRect();return{x:(e.clientX??e.touches?.[0]?.clientX)-r.left,y:(e.clientY??e.touches?.[0]?.clientY)-r.top};};
+  const st=(e)=>{e.preventDefault();const p=gp(e);const ctx=ref.current.getContext('2d');ctx.beginPath();ctx.moveTo(p.x,p.y);setDr(true);};
+  const mv=(e)=>{e.preventDefault();if(!dr)return;const p=gp(e);const ctx=ref.current.getContext('2d');ctx.lineTo(p.x,p.y);ctx.stroke();setHas(true);};
+  const en=()=>setDr(false);
+  const cl=()=>{ref.current.getContext('2d').clearRect(0,0,ref.current.width,ref.current.height);setHas(false);};
+  return(<div className="modal-overlay" onClick={onClose}><div className="modal-content slide-up" onClick={e=>e.stopPropagation()} style={{display:'flex',flexDirection:'column',height:'80vh',maxHeight:'500px'}}>
+    <div style={{background:B.purple,color:'white',padding:'16px 20px',display:'flex',justifyContent:'space-between',alignItems:'center'}}><h3 style={{margin:0,fontSize:18,fontWeight:800}}>✍ {label}</h3><button onClick={onClose} style={{background:'none',color:'white',fontSize:24}}>&times;</button></div>
+    <div style={{flex:1,background:'#f8fafc',position:'relative',cursor:'crosshair'}}>{!has&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none',color:'#cbd5e1',fontSize:28,fontWeight:900,opacity:0.5}}>وقّع هنا</div>}<canvas ref={ref} style={{width:'100%',height:'100%',touchAction:'none'}} onMouseDown={st} onMouseMove={mv} onMouseUp={en} onMouseLeave={en} onTouchStart={st} onTouchMove={mv} onTouchEnd={en}/></div>
+    <div style={{padding:16,display:'flex',gap:12,background:'white',borderTop:'1px solid #e2e8f0'}}><button onClick={cl} style={{flex:1,padding:14,background:'#fef2f2',color:'#dc2626',borderRadius:12,fontSize:16,fontWeight:800}}>🔄 مسح</button><button onClick={()=>{if(has)onSave(ref.current.toDataURL());onClose();}} disabled={!has} style={{flex:2,padding:14,background:has?B.purple:'#cbd5e1',color:'white',borderRadius:12,fontSize:16,fontWeight:800}}>✅ حفظ</button></div>
+  </div></div>);
 };
+const SigBox=({onClick,label,val})=>(<div onClick={onClick} style={{border:`2px dashed ${val?B.purple:'#cbd5e1'}`,borderRadius:12,padding:14,background:val?B.light:'#f8fafc',textAlign:'center',cursor:'pointer',minHeight:100,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',transition:'all 0.2s'}}>{val?<img src={val} style={{maxHeight:70,maxWidth:'100%'}} alt=""/>:<div style={{color:'#94a3b8',fontSize:13,fontWeight:700}}><i className="fas fa-pen-nib" style={{fontSize:22,display:'block',marginBottom:8,color:B.orange}}/>{label}</div>}</div>);
+</script>
 
-// ============ شاشة الدخول ============
-const LoginScreen = ({onLogin, onPublicForm}) => {
-  const [username, setUsername] = useState(''); const [pass, setPass] = useState(''); const [err, setErr] = useState('');
-  const settings = DB.get('settings');
-  const go = () => {
-    const admin = DB.get('admin');
-    const users = DB.get('users') || [];
-    if(username === admin.username && pass === admin.password) {
-        return onLogin({...admin});
-    }
-    const user = users.find(u => u.username === username && u.password === pass);
-    if(user) {
-        if(!settings.systemActive) { setErr('النظام متوقف حالياً'); return; }
-        return onLogin({...user});
-    }
-    setErr('بيانات الدخول غير صحيحة');
+<!-- ============================================================ -->
+<!-- MODULE 3: Login Screen (V3.1 - password toggle, shake, route) -->
+<!-- ============================================================ -->
+<script type="text/babel">
+const LoginScreen=({onLogin,onPublicForm})=>{
+  const[username,setUsername]=useState('');const[pass,setPass]=useState('');const[err,setErr]=useState('');const[loading,setLoading]=useState(false);const[showPass,setShowPass]=useState(false);const[shaking,setShaking]=useState(false);
+  const settings=DB.get('settings');
+  const doShake=()=>{setShaking(true);setTimeout(()=>setShaking(false),500);};
+  const go=()=>{
+    setLoading(true);
+    setTimeout(()=>{
+      const admin=DB.get('admin');
+      if(username===admin.username&&pass===admin.password)return onLogin({...admin});
+      const users=DB.get('users')||[];
+      const user=users.find(u=>u.username===username&&u.password===pass&&u.active);
+      if(user){if(!settings.systemActive){setErr('النظام متوقف حالياً');setLoading(false);doShake();return;}return onLogin({...user});}
+      setErr('بيانات الدخول غير صحيحة');setLoading(false);doShake();
+    },500);
   };
   return(
-    <div style={{minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:`linear-gradient(135deg,${B.dark},${B.purple})`, padding:16}}>
-      <div style={{width:'100%', maxWidth:420, background:'white', borderRadius:28, overflow:'hidden', boxShadow:'0 30px 60px rgba(0,0,0,0.3)'}}>
-        <div style={{height:5, background:`linear-gradient(90deg,${B.orange},${B.purple})`}}/>
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:`linear-gradient(135deg,${B.dark},${B.purple})`,padding:16}}>
+      <div className={shaking?'shake':''} style={{width:'100%',maxWidth:420,background:'white',borderRadius:28,overflow:'hidden',boxShadow:'0 30px 60px rgba(0,0,0,0.3)'}}>
+        <div style={{height:5,background:`linear-gradient(90deg,${B.orange},${B.purple})`}}/>
         <div style={{padding:'40px 32px 32px'}}>
-          <div style={{textAlign:'center', marginBottom:32}}>
-            <img src={LOGO} style={{height:80, marginBottom:12}} alt=""/>
-            <h1 style={{fontSize:22, fontWeight:900, color:B.purple}}>نظام فتح الحسابات V2.4.1</h1>
+          <div style={{textAlign:'center',marginBottom:32}}>
+            <img src={LOGO} style={{height:80,marginBottom:12}} alt=""/>
+            <h1 style={{fontSize:22,fontWeight:900,color:B.purple}}>نظام فتح الحسابات</h1>
+            <p style={{fontSize:11,color:'#94a3b8',marginTop:4}}>ابن قايد المريسي للصرافة والتحويلات | V3.1</p>
+            {!settings.systemActive&&<div className="badge badge-red" style={{marginTop:8,fontSize:12}}>⚠ النظام متوقف</div>}
           </div>
-          {err && <div style={{padding:10, background:'#fef2f2', color:'#dc2626', borderRadius:10, marginBottom:14, fontSize:13, fontWeight:700}}>{err}</div>}
-          <div style={{marginBottom:14}}><input type="text" value={username} onChange={e=>{setUsername(e.target.value);setErr('');}} placeholder="اسم المستخدم" style={inp()}/></div>
-          <div style={{marginBottom:24}}><input type="password" value={pass} onChange={e=>{setPass(e.target.value);setErr('');}} placeholder="كلمة المرور" style={inp()}/></div>
-          <button onClick={go} style={{width:'100%', padding:14, background:B.purple, color:'white', border:'none', borderRadius:14, fontSize:16, fontWeight:900}}>تسجيل الدخول للإدارة</button>
-          {settings.systemActive && <button onClick={onPublicForm} style={{width:'100%', marginTop:14, padding:14, background:'white', color:B.purple, border:`2px solid ${B.orange}`, borderRadius:14, fontSize:14, fontWeight:800}}>📝 تقديم طلب عميل جديد</button>}
+          {err&&<div className="fade-in" style={{padding:10,background:'#fef2f2',color:'#dc2626',borderRadius:10,marginBottom:14,fontSize:13,fontWeight:700}}>⚠ {err}</div>}
+          <div style={{marginBottom:14}}>
+            <label style={{fontSize:11,fontWeight:700,color:'#64748b',marginBottom:4,display:'block'}}>اسم المستخدم</label>
+            <input type="text" value={username} onChange={e=>{setUsername(e.target.value);setErr('');}} placeholder="أدخل اسم المستخدم" onKeyDown={e=>e.key==='Enter'&&go()} style={inp()}/>
+          </div>
+          <div style={{marginBottom:24}}>
+            <label style={{fontSize:11,fontWeight:700,color:'#64748b',marginBottom:4,display:'block'}}>كلمة المرور</label>
+            <div style={{position:'relative'}}>
+              <input type={showPass?'text':'password'} value={pass} onChange={e=>{setPass(e.target.value);setErr('');}} placeholder="أدخل كلمة المرور" onKeyDown={e=>e.key==='Enter'&&go()} style={{...inp(),paddingLeft:44}}/>
+              <button onClick={()=>setShowPass(!showPass)} style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',background:'none',color:'#94a3b8',fontSize:18,padding:4}}>{showPass?'🙈':'👁'}</button>
+            </div>
+          </div>
+          <button onClick={go} disabled={loading||!username||!pass} style={{width:'100%',padding:14,background:loading?'#94a3b8':B.purple,color:'white',borderRadius:14,fontSize:16,fontWeight:900}}>{loading?'جارٍ التحقق...':'تسجيل الدخول'}</button>
+          {settings.systemActive&&<button onClick={onPublicForm} style={{width:'100%',marginTop:14,padding:14,background:'white',color:B.purple,border:`2px solid ${B.orange}`,borderRadius:14,fontSize:14,fontWeight:800}}>📝 تقديم طلب فتح حساب جديد</button>}
         </div>
       </div>
     </div>
   );
 };
+</script>
 
-// ============ لوحة الإدارة (نسخة مختصرة ومصححة) ============
-const AdminPanel = ({user, onLogout}) => {
-  const [tab, setTab] = useState('submissions');
-  const [subs, setSubs] = useState(DB.get('submissions')||[]);
-  const [settings, setSettings] = useState(DB.get('settings'));
-  const [showPDF, setShowPDF] = useState(null);
-  
-  const printSub = (sub) => {
-    setShowPDF(sub);
-    setTimeout(() => {
-      html2pdf().from(document.getElementById('pdf-output')).set({
-        margin: 0, filename: `حساب_${sub.id}.pdf`, image: {type: 'jpeg', quality: 0.98},
-        html2canvas: {scale: 2, useCORS: true}, jsPDF: {unit: 'mm', format: 'a4', orientation: 'portrait'},
-        pagebreak: {mode: ['css'], before: '.page-a4'}
-      }).save().then(() => setShowPDF(null));
-    }, 500);
-  };
+<!-- ============================================================ -->
+<!-- MODULE 4: Admin Dashboard (V3.1 - stats, search, notes, settings) -->
+<!-- ============================================================ -->
+<script type="text/babel">
+const AdminPanel=({user,onLogout})=>{
+  const[tab,setTab]=useState('submissions');
+  const[subs,setSubs]=useState(DB.get('submissions')||[]);
+  const[users,setUsers]=useState(DB.get('users')||[]);
+  const[settings,setSettings]=useState(DB.get('settings'));
+  const[admin,setAdmin]=useState(DB.get('admin'));
+  const[toast,setToast]=useState(null);
+  const[selectedSub,setSelectedSub]=useState(null);
+  const[showPDF,setShowPDF]=useState(null);
+  const[newUser,setNewUser]=useState({username:'',password:'',branch:'',active:true});
+  const[editList,setEditList]=useState(null);const[newItem,setNewItem]=useState('');
+  // V3.1: Search & Filter
+  const[searchQ,setSearchQ]=useState('');const[filterStatus,setFilterStatus]=useState('');const[filterBranch,setFilterBranch]=useState('');
 
-  return (
-    <div className="no-print" style={{minHeight:'100vh', background:'#f1f5f9', padding:16}}>
-      {showPDF && <div style={{position:'fixed', inset:0, zIndex:2000, background:'#444', overflow:'auto'}}><button onClick={()=>setShowPDF(null)} style={{position:'fixed', top:16, left:16, zIndex:2001, background:'white', border:'none', borderRadius:'50%', width:40, height:40, fontSize:20}}>✕</button><PDFDoc f={showPDF} op={user}/></div>}
-      
-      <div style={{maxWidth:900, margin:'0 auto'}}>
-        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', background:'white', padding:'12px 20px', borderRadius:16, marginBottom:16}}>
-          <div><h2 style={{margin:0, fontSize:18, fontWeight:900, color:B.purple}}>لوحة تحكم الإدارة</h2><p style={{margin:0, fontSize:12, color:'#64748b'}}>مرحباً، {user.username}</p></div>
-          <button onClick={onLogout} style={{padding:'6px 14px', background:'#fef2f2', color:'#dc2626', border:'none', borderRadius:8, fontSize:13, fontWeight:700}}>تسجيل خروج</button>
+  const isAdmin=user.role==='admin';
+  const refresh=()=>{setSubs(DB.get('submissions')||[]);setUsers(DB.get('users')||[]);setSettings(DB.get('settings'));setAdmin(DB.get('admin'));};
+  const showMsg=(msg,type='success')=>setToast({msg,type});
+  const saveSetting=(key,val)=>{const s={...settings,[key]:val};DB.set('settings',s);setSettings(s);};
+
+  // V3.1: Stats
+  const stats=useMemo(()=>({
+    total:subs.length,
+    pending:subs.filter(s=>s.status==='pending').length,
+    approved:subs.filter(s=>s.status==='approved').length,
+    rejected:subs.filter(s=>s.status==='rejected').length,
+    today:subs.filter(s=>s.submittedAt===isoDate()).length
+  }),[subs]);
+
+  // V3.1: Filtered submissions
+  const filteredSubs=useMemo(()=>{
+    let r=[...subs];
+    if(searchQ){const q=searchQ.toLowerCase();r=r.filter(s=>(s.fullName||'').toLowerCase().includes(q)||(s.idNumber||'').includes(q)||(s.id||'').includes(q));}
+    if(filterStatus)r=r.filter(s=>s.status===filterStatus);
+    if(filterBranch)r=r.filter(s=>s.branch===filterBranch);
+    return r.sort((a,b)=>(b.id||'').localeCompare(a.id||''));
+  },[subs,searchQ,filterStatus,filterBranch]);
+
+  const updateSubStatus=(id,status)=>{const s=subs.map(x=>x.id===id?{...x,status,reviewedBy:user.username,reviewDate:isoDate()}:x);DB.set('submissions',s);setSubs(s);showMsg(status==='approved'?'تمت الموافقة ✅':'تم الرفض ❌',status==='approved'?'success':'error');};
+  const deleteSub=(id)=>{if(!confirm('حذف؟'))return;const s=subs.filter(x=>x.id!==id);DB.set('submissions',s);setSubs(s);showMsg('تم الحذف');};
+  // V3.1: Admin notes
+  const updateNote=(id,note)=>{const s=subs.map(x=>x.id===id?{...x,adminNote:note}:x);DB.set('submissions',s);setSubs(s);};
+
+  const addUser=()=>{if(!newUser.username||!newUser.password){showMsg('أكمل البيانات','error');return;}if(users.find(u=>u.username===newUser.username)){showMsg('موجود','error');return;}const u=[...users,{...newUser,id:genId(),createdAt:isoDate()}];DB.set('users',u);setUsers(u);setNewUser({username:'',password:'',branch:'',active:true});showMsg('تم الإضافة');};
+  const toggleUser=(id)=>{const u=users.map(x=>x.id===id?{...x,active:!x.active}:x);DB.set('users',u);setUsers(u);};
+  const removeUser=(id)=>{if(!confirm('حذف؟'))return;const u=users.filter(x=>x.id!==id);DB.set('users',u);setUsers(u);showMsg('تم');};
+
+  const printSub=(sub)=>{setShowPDF(sub);setTimeout(()=>{html2pdf().from(document.getElementById('pdf-output')).set({margin:0,filename:`حساب_${sub.id}.pdf`,image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true,allowTaint:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css'],before:'.page-a4'}}).save().then(()=>setShowPDF(null)).catch(()=>setShowPDF(null));},700);};
+
+  const toggleRequired=(field)=>{const rf=[...settings.requiredFields];const i=rf.indexOf(field);if(i>=0)rf.splice(i,1);else rf.push(field);saveSetting('requiredFields',rf);};
+  const addListItem=(field)=>{if(!newItem.trim())return;saveSetting(field,[...(settings[field]||[]),newItem.trim()]);setNewItem('');};
+  const removeListItem=(field,idx)=>{const items=[...(settings[field]||[])];items.splice(idx,1);saveSetting(field,items);};
+  const updateListItem=(field,idx,val)=>{const items=[...(settings[field]||[])];items[idx]=val;saveSetting(field,items);};
+  const updatePdfSetting=(key,val)=>{saveSetting('pdfSettings',{...settings.pdfSettings,[key]:val});};
+
+  const tabs=isAdmin?[{id:'submissions',label:'الطلبات',icon:'📋',count:stats.pending},{id:'users',label:'المستخدمون',icon:'👥'},{id:'settings',label:'الإعدادات',icon:'⚙️'}]:[{id:'submissions',label:'الطلبات',icon:'📋'}];
+
+  return(
+    <div className="no-print" style={{minHeight:'100vh',background:'#f1f5f9',padding:16}}>
+      {toast&&<Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
+      {showPDF&&<div style={{position:'fixed',inset:0,zIndex:2000,background:'#444',overflow:'auto'}}><button onClick={()=>setShowPDF(null)} style={{position:'fixed',top:16,left:16,zIndex:2001,background:'white',borderRadius:'50%',width:40,height:40,fontSize:20,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 12px rgba(0,0,0,0.3)'}}>✕</button><PDFDoc f={showPDF} op={user}/></div>}
+
+      <div style={{maxWidth:960,margin:'0 auto'}}>
+        {/* Top Bar */}
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'white',padding:'12px 20px',borderRadius:16,marginBottom:16,boxShadow:'0 2px 8px rgba(0,0,0,0.04)'}}>
+          <div style={{display:'flex',alignItems:'center',gap:10}}><img src={LOGO} style={{height:36}} alt=""/><div><h2 style={{margin:0,fontSize:16,fontWeight:900,color:B.purple}}>لوحة التحكم V3.1</h2><p style={{margin:0,fontSize:11,color:'#64748b'}}>{user.username} ({isAdmin?'مدير':'مستخدم'})</p></div></div>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>{isAdmin&&<span className={`badge ${settings.systemActive?'badge-green':'badge-red'}`}>{settings.systemActive?'🟢 يعمل':'🔴 متوقف'}</span>}<button onClick={onLogout} style={{padding:'6px 14px',background:'#fef2f2',color:'#dc2626',borderRadius:8,fontSize:12,fontWeight:700}}>خروج ↩</button></div>
         </div>
-        
-        <div style={{background:'white', borderRadius:20, padding:24, minHeight:400}}>
-          <h3 style={{fontSize:16, fontWeight:800, color:B.purple, marginBottom:16}}>📋 الطلبات المقدمة ({subs.length})</h3>
-          {subs.length===0 ? <div style={{textAlign:'center', color:'#94a3b8', padding:40}}>لا توجد طلبات بعد</div> :
-            subs.map(s => (
-              <div key={s.id} style={{border:'1px solid #e2e8f0', borderRadius:14, padding:16, background:'#fafafa', marginBottom:10}}>
-                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                  <div>
-                    <h4 style={{margin:0, fontSize:16, fontWeight:800, color:B.purple}}>{s.fullName} <span className="badge badge-blue">{s.accountType}</span></h4>
-                    <p style={{margin:'4px 0 0', fontSize:13, color:'#64748b'}}>{s.idType} ({s.idNumber}) | {s.mobile} | {s.branch}</p>
-                    <p style={{margin:'4px 0 0', fontSize:12, color:'#16a34a', fontWeight:700}}>رقم المرجع: {s.id}</p>
-                  </div>
-                  <div>
-                    <button onClick={()=>printSub(s)} style={{padding:'8px 16px', background:'#dbeafe', color:'#1d4ed8', border:'none', borderRadius:10, fontSize:13, fontWeight:800}}>🖨 طباعة PDF</button>
-                  </div>
-                </div>
-              </div>
-            ))
-          }
-        </div>
-      </div>
-    </div>
-  );
-};
 
-// ============ نموذج العميل ============
-const ClientForm = ({onBack}) => {
-  const settings = DB.get('settings');
-  const reqFields = settings.requiredFields || [];
-  const [step, setStep] = useState(1); const T = 7;
-  const [errs, setErrs] = useState({}); const [toast, setToast] = useState(null);
-  const [submitted, setSubmitted] = useState(false); const [subData, setSubData] = useState(null);
-  const [activeSig, setActiveSig] = useState(null);
+        {/* V3.1: Stats Dashboard */}
+        {isAdmin&&<div className="stats-grid fade-in">
+          {[{icon:'📊',num:stats.total,label:'إجمالي الطلبات',color:'#475569'},{icon:'⏳',num:stats.pending,label:'قيد المراجعة',color:'#a16207'},{icon:'✅',num:stats.approved,label:'معتمد',color:'#16a34a'},{icon:'❌',num:stats.rejected,label:'مرفوض',color:'#dc2626'},{icon:'📅',num:stats.today,label:'طلبات اليوم',color:'#1d4ed8'}].map((s,i)=>
+            <div key={i} className="stat-card"><div className="stat-icon">{s.icon}</div><div className="stat-number" style={{color:s.color}}>{s.num}</div><div className="stat-label">{s.label}</div></div>
+          )}
+        </div>}
 
-  const [fd, setFd] = useState({
-    accountType: 'شخصي', names: Array(settings.nameFieldCount).fill(''), nickname: '',
-    businessName: '', businessType: '', legalForm: '',
-    idType: Object.keys(settings.idRules)[0], idNumber: '', idIssueDate: '', idExpiry: '', idIssuePlace: '',
-    birthDate: '', country: 'اليمن', birthGov: '', birthDistrict: '', address: '', 
-    mobileType: 'yemeni', mobile: '', countryCode: '+967', phone: '', email: '', branch: '',
-    currencies: [], services: [], authorized: [{name:'', id:'', phone:'', permissions:[], signature:null}],
-    sampleSignatures: [null, null, null], mainSignature: null, idPhotos: {}, termsAccepted: false
-  });
+        <div className="tabs">{tabs.map(t=><button key={t.id} onClick={()=>setTab(t.id)} className={`tab ${tab===t.id?'active':''}`}>{t.icon} {t.label}{t.count>0&&<span className="tab-badge">{t.count}</span>}</button>)}</div>
 
-  const uf = (f, v) => setFd(p => ({...p, [f]: v}));
-  const updateName = (i, v) => { const n = [...fd.names]; n[i] = v; uf('names', n); };
-  const addNameField = () => { if(fd.names.length < 6) uf('names', [...fd.names, '']); };
-  const idRule = settings.idRules[fd.idType];
-  const currentYear = new Date().getFullYear();
-
-  useEffect(() => {
-    if(fd.idIssueDate && !fd.idIssueDate.includes('--') && idRule) {
-      uf('idExpiry', addYears(fd.idIssueDate, idRule.expiryYears));
-    }
-  }, [fd.idIssueDate, fd.idType]);
-
-  const req = (field) => reqFields.includes(field);
-
-  const validate = (checkStep) => {
-    const e = {};
-    if(checkStep === 1 && !fd.termsAccepted) e.terms = 'يجب الموافقة';
-    if(checkStep === 2) {
-      if(req('names')) fd.names.forEach((n, i) => { if(i < settings.nameFieldCount && !n.trim()) e[`name_${i}`] = 'مطلوب'; });
-      if(req('nickname') && !fd.nickname.trim()) e.nickname = 'مطلوب';
-      if(fd.accountType === 'تجاري') {
-        if(req('businessName') && !fd.businessName) e.businessName = 'مطلوب'; 
-        if(req('businessType') && !fd.businessType) e.businessType = 'مطلوب'; 
-        if(req('legalForm') && !fd.legalForm) e.legalForm = 'مطلوب';
-      }
-    }
-    if(checkStep === 3) {
-      if(req('idNumber') && !fd.idNumber) e.idNumber = 'مطلوب';
-      else if(fd.idNumber && idRule && fd.idNumber.length !== idRule.digits) e.idNumber = `يجب أن يكون ${idRule.digits} رقم`;
-      if(req('idIssueDate') && (!fd.idIssueDate || !/^\d{4}-\d{2}-\d{2}$/.test(fd.idIssueDate))) e.idIssueDate = 'تاريخ غير مكتمل';
-      if(req('idIssuePlace') && !fd.idIssuePlace) e.idIssuePlace = 'مطلوب';
-      if(req('birthDate') && (!fd.birthDate || !/^\d{4}-\d{2}-\d{2}$/.test(fd.birthDate))) e.birthDate = 'تاريخ غير مكتمل';
-    }
-    if(checkStep === 4) { 
-      if(req('country') && !fd.country) e.country = 'مطلوب';
-      if(fd.country && worldGeoData[fd.country]) {
-          if(req('birthGov') && !fd.birthGov) e.birthGov = 'مطلوب';
-      }
-      if(req('address') && !fd.address) e.address = 'مطلوب';
-      if(req('mobile') && !fd.mobile) e.mobile = 'مطلوب';
-      if(fd.mobileType === 'yemeni' && fd.mobile) {
-        if(!/^(77|71|70|73|78)\d{7}$/.test(fd.mobile)) e.mobile = 'رقم يمني غير صالح (9 أرقام)';
-      }
-      if(req('branch') && !fd.branch) e.branch = 'مطلوب'; 
-    }
-    if(checkStep === 5) {
-        if(req('currencies') && fd.currencies.length === 0) e.currencies = 'مطلوب عملة واحدة على الأقل';
-    }
-    if(checkStep === 6) {
-        if (fd.sampleSignatures.some(s => !s)) e.sampleSignatures = 'يجب إكمال جميع نماذج التوقيعات الثلاثة';
-        if (!fd.mainSignature) e.mainSignature = 'التوقيع الرئيسي للإقرار إلزامي';
-    }
-    if(checkStep === 7 && req('photos')) {
-        const requiredPhotos = getPhotoConfig();
-        if(requiredPhotos.some(p => !fd.idPhotos[p.id])) e.photos = 'الرجاء إرفاق جميع صور الوثائق';
-    }
-    return e;
-  };
-
-  const nx = () => { 
-    const stepErrors = validate(step);
-    if (Object.keys(stepErrors).length === 0) {
-      setStep(s => Math.min(s+1, T));
-    } else {
-      setErrs(stepErrors);
-      setToast({msg:'يرجى إكمال الحقول الإلزامية بدقة', type:'error'});
-    }
-  };
-
-  const submitForm = () => {
-    const allErrors = {};
-    for (let i = 1; i <= T; i++) {
-        Object.assign(allErrors, validate(i));
-    }
-    if (Object.keys(allErrors).length > 0) {
-        setErrs(allErrors);
-        setToast({msg:'هناك حقول إلزامية ناقصة. يرجى المراجعة.', type:'error'});
-        return;
-    }
-    const fullName = [...fd.names, fd.nickname].filter(Boolean).join(' ');
-    const subs = DB.get('submissions') || [];
-    const count = subs.filter(s => s.id.startsWith(currentYear.toString())).length + 1;
-    const finalId = `${currentYear}-${count.toString().padStart(4, '0')}`;
-    const finalMobile = fd.mobileType === 'yemeni' ? '+967' + fd.mobile : fd.countryCode + fd.mobile;
-    const submission = {...fd, fullName, mobile: finalMobile, id: finalId, status: 'pending', submittedAt: isoDate()};
-    DB.set('submissions', [...subs, submission]);
-    setSubData(submission); 
-    setSubmitted(true);
-  };
-
-  const getPhotoConfig = () => {
-    if(fd.idType.includes('شخصية')) return [{id:'front', label:'الوجه الأمامي'}, {id:'back', label:'الوجه الخلفي'}];
-    if(fd.idType.includes('جواز')) return [{id:'passport', label:'صورة صفحة البيانات'}];
-    return [{id:'main', label:'صورة الهوية'}];
-  };
-
-  const handlePhoto = (id, file) => {
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => setFd(p => ({...p, idPhotos: {...p.idPhotos, [id]: e.target.result}}));
-    reader.readAsDataURL(file);
-  };
-
-  const SigBox = ({id, label, val}) => (
-    <div onClick={()=>setActiveSig(id)} style={{border:`2px dashed ${val?B.purple:'#cbd5e1'}`, borderRadius:12, padding:14, background:'#f8fafc', textAlign:'center', cursor:'pointer', minHeight:100, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center'}}>
-      {val ? <img src={val} style={{maxHeight:70, maxWidth:'100%'}} alt=""/> : <div style={{color:'#94a3b8', fontSize:13, fontWeight:700}}><i className="fas fa-pen-nib" style={{fontSize:20, display:'block', marginBottom:8}}/>اضغط هنا للتوقيع<br/>{label}</div>}
-    </div>
-  );
-
-  if(submitted) return (
-    <div style={{minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f1f5f9', padding:16}}>
-      <div className="slide-up" style={{textAlign:'center', background:'white', padding:'40px 20px', borderRadius:24, boxShadow:'0 10px 30px rgba(0,0,0,0.1)', maxWidth:500, width:'100%'}}>
-        <div style={{width:80, height:80, borderRadius:'50%', background:'#dcfce7', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px', fontSize:40}}>✅</div>
-        <h2 style={{color:B.purple, fontWeight:900, marginBottom:10}}>تم تقديم الطلب بنجاح!</h2>
-        <p style={{color:'#64748b', fontSize:15, lineHeight:1.8}}>رقم طلبك المرجعي: <strong>{subData.id}</strong></p>
-        <button onClick={onBack} style={{marginTop:20, padding:'12px 30px', background:B.purple, color:'white', border:'none', borderRadius:12, fontSize:14, fontWeight:800}}>العودة للرئيسية</button>
-      </div>
-    </div>
-  );
-
-  const labels = ['الشروط','البيانات الأساسية','الهوية والتواريخ','العنوان والتواصل','العملات والخدمات','التوقيعات','إرفاق الوثائق'];
-
-  return (
-    <div style={{minHeight:'100vh', background:'#f1f5f9', padding:'16px 10px'}}>
-      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
-      {activeSig !== null && <SignatureModal 
-          label={activeSig === 'main' ? 'التوقيع الرئيسي' : `نموذج ${activeSig + 1}`} 
-          init={activeSig === 'main' ? fd.mainSignature : fd.sampleSignatures[activeSig]} 
-          onSave={img => {
-              if (activeSig === 'main') uf('mainSignature', img);
-              else { const s = [...fd.sampleSignatures]; s[activeSig] = img; uf('sampleSignatures', s); }
-          }} 
-          onClose={() => setActiveSig(null)}
-      />}
-
-      <div className="no-print" style={{maxWidth:700, margin:'0 auto'}}>
-        <div style={{marginBottom:14}}><button onClick={onBack} style={{padding:'8px 14px', background:'white', border:'1px solid #e2e8f0', borderRadius:10, fontSize:13, fontWeight:700, color:'#64748b'}}>↩ العودة</button></div>
-        <div style={{background:'white', borderRadius:24, boxShadow:'0 16px 48px rgba(128,42,93,0.1)', overflow:'hidden'}}>
-          <div style={{padding:'20px 24px 16px', borderBottom:'1px solid #f1f5f9'}}>
-            <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:12}}><img src={LOGO} style={{height:42}} alt=""/><div><p style={{margin:0, fontSize:11, fontWeight:800, color:B.orange}}>مرحلة {step} من {T}</p><h2 style={{margin:0, fontSize:18, fontWeight:900, color:B.purple}}>{labels[step-1]}</h2></div></div>
-            <div style={{display:'flex', gap:4}}>{Array.from({length:T},(_,i)=><div key={i} style={{flex:1, height:4, borderRadius:2, background:i<step?B.purple:'#e2e8f0'}}/>)}</div>
-          </div>
-
-          <div style={{padding:'20px 24px', minHeight:400}}>
-            {step===1 && <div className="fade-in">
-              <div style={{background:'#fffbeb', padding:16, borderRadius:16, marginBottom:20, maxHeight:300, overflowY:'auto', fontSize:14}}>
-                <h3 style={{color:B.purple, fontWeight:900, marginBottom:10}}>شروط فتح الحساب</h3>
-                <ul><li>تعبئة الاستمارة والتوقيع عليها.</li><li>إرفاق صورة الهوية سارية المفعول.</li><li>التوقيع أمام الموظف المختص.</li><li>الالتزام بالشروط والأحكام.</li></ul>
-              </div>
-              <label style={{display:'flex', alignItems:'center', gap:10, padding:14, background:fd.termsAccepted?'#f8f0f5':'white', border:`2px solid ${errs.terms?'#fca5a5':fd.termsAccepted?B.purple:'#e2e8f0'}`, borderRadius:14, cursor:'pointer'}}>
-                <input type="checkbox" checked={fd.termsAccepted} onChange={e=>uf('termsAccepted',e.target.checked)} style={{width:20, height:20, accentColor:B.purple}}/>
-                <span style={{fontSize:15, fontWeight:800}}>أقر بالموافقة على الشروط</span>
-              </label>
-            </div>}
-
-            {step===2 && <div className="fade-in">
-              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
-                <div style={{gridColumn:'span 2', display:'flex', justifyContent:'space-between'}}>
-                  <h4 style={{fontSize:16, fontWeight:800, color:B.purple}}>الاسم الشخصي</h4>
-                  <button type="button" onClick={addNameField} style={{background:'none', border:`1px dashed ${B.purple}`, color:B.purple, borderRadius:30, padding:'4px 14px', fontSize:13, fontWeight:700}}>+ إضافة اسم</button>
-                </div>
-                {fd.names.map((n, i) => (
-                  <Fld key={i} label={`الاسم ${i+1}`} req={req('names') && i < settings.nameFieldCount} err={errs[`name_${i}`]}>
-                    <input style={inp(errs[`name_${i}`])} value={n} onChange={e=>updateName(i, e.target.value)} placeholder={`الاسم ${i+1}`}/>
-                  </Fld>
-                ))}
-                <Fld label="اللقب العائلي" req={req('nickname')} err={errs.nickname}><input style={inp(errs.nickname)} value={fd.nickname} onChange={e=>uf('nickname', e.target.value)} placeholder="اللقب"/></Fld>
-              </div>
-            </div>}
-
-            {step===3 && <div className="fade-in">
-              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
-                <Fld label="نوع الهوية" req={req('idType')}><select style={inp()} value={fd.idType} onChange={e=>{uf('idType',e.target.value); uf('idNumber',''); uf('idPhotos',{});}}>{Object.keys(settings.idRules).map(t=><option key={t}>{t}</option>)}</select></Fld>
-                <Fld label={`رقم الهوية (${idRule.digits} رقم)`} req={req('idNumber')} err={errs.idNumber}><input style={{...inp(errs.idNumber), fontFamily:'monospace', fontWeight:700}} value={fd.idNumber} onChange={e=>uf('idNumber', e.target.value.replace(/\D/g,'').slice(0,idRule.digits))} placeholder={'0'.repeat(idRule.digits)}/></Fld>
-                <div style={{gridColumn:'span 2'}}><Fld label="تاريخ الإصدار" req={req('idIssueDate')} err={errs.idIssueDate}><DatePicker value={fd.idIssueDate} onChange={v=>uf('idIssueDate', v)} err={errs.idIssueDate} minY={settings.dateRanges.issueDate.min} maxY={settings.dateRanges.issueDate.max}/></Fld></div>
-                <Fld label="تاريخ الانتهاء"><div style={{...inp(), background:'#f0fdf4'}}>{fd.idExpiry || '—'}</div></Fld>
-                <Fld label="مكان الإصدار" req={req('idIssuePlace')} err={errs.idIssuePlace}><select style={inp(errs.idIssuePlace)} value={fd.idIssuePlace} onChange={e=>uf('idIssuePlace', e.target.value)}><option value="">اختر</option>{Object.keys(worldGeoData['اليمن'] || {}).map(p=><option key={p}>{p}</option>)}</select></Fld>
-                <div style={{gridColumn:'span 2'}}><Fld label="تاريخ الميلاد" req={req('birthDate')} err={errs.birthDate}><DatePicker value={fd.birthDate} onChange={v=>uf('birthDate', v)} err={errs.birthDate} minY={settings.dateRanges.birthDate.min} maxY={settings.dateRanges.birthDate.max}/></Fld></div>
-              </div>
-            </div>}
-
-            {step===4 && <div className="fade-in">
-              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
-                <div style={{gridColumn:'span 2'}}><Fld label="الدولة" req={req('country')}><select style={inp()} value={fd.country} onChange={e=>{uf('country', e.target.value); uf('birthGov',''); uf('birthDistrict',''); uf('address','');}}><option value="">اختر</option>{Object.keys(worldGeoData).map(c=><option key={c}>{c}</option>)}</select></Fld></div>
-                
-                {fd.country && worldGeoData[fd.country] ? (
-                  <>
-                    <Fld label="المحافظة / الولاية" req={req('birthGov')} err={errs.birthGov}>
-                      <select style={inp(errs.birthGov)} value={fd.birthGov} onChange={e => { uf('birthGov', e.target.value); uf('birthDistrict', ''); uf('address', ''); }}>
-                        <option value="">اختر</option>
-                        {Object.keys(worldGeoData[fd.country]).map(g => <option key={g} value={g}>{g}</option>)}
-                      </select>
-                    </Fld>
-                    <Fld label="المديرية / المقاطعة" req={req('birthDistrict')} err={errs.birthDistrict}>
-                      <select style={inp(errs.birthDistrict)} value={fd.birthDistrict} onChange={e => { uf('birthDistrict', e.target.value); uf('address', ''); }} disabled={!fd.birthGov}>
-                        <option value="">اختر</option>
-                        {fd.birthGov && worldGeoData[fd.country][fd.birthGov] ? Object.keys(worldGeoData[fd.country][fd.birthGov]).map(d => <option key={d} value={d}>{d}</option>) : null}
-                      </select>
-                    </Fld>
-                    <div style={{gridColumn:'span 2'}}>
-                      <Fld label="المنطقة / الحي" req={req('address')} err={errs.address}>
-                        <select style={inp(errs.address)} value={fd.address} onChange={e => uf('address', e.target.value)} disabled={!fd.birthDistrict}>
-                          <option value="">اختر</option>
-                          {fd.birthGov && fd.birthDistrict && worldGeoData[fd.country][fd.birthGov][fd.birthDistrict] ? worldGeoData[fd.country][fd.birthGov][fd.birthDistrict].map(r => <option key={r} value={r}>{r}</option>) : null}
-                        </select>
-                      </Fld>
+        <div className="card" style={{padding:24,minHeight:400}}>
+          {/* ==== SUBMISSIONS ==== */}
+          {tab==='submissions'&&<div className="fade-in">
+            <h3 style={{fontSize:16,fontWeight:800,color:B.purple,marginBottom:12}}>📋 الطلبات</h3>
+            {/* V3.1: Filter Bar */}
+            <div className="filter-bar">
+              <input placeholder="🔍 بحث (اسم، هوية، مرجع)..." value={searchQ} onChange={e=>setSearchQ(e.target.value)} style={{flex:1}}/>
+              <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}><option value="">كل الحالات</option><option value="pending">⏳ قيد المراجعة</option><option value="approved">✅ معتمد</option><option value="rejected">❌ مرفوض</option></select>
+              <select value={filterBranch} onChange={e=>setFilterBranch(e.target.value)}><option value="">كل الفروع</option>{settings.branches.map(b=><option key={b} value={b}>{b}</option>)}</select>
+            </div>
+            <p style={{fontSize:12,color:'#64748b',marginBottom:10}}>عرض {filteredSubs.length} من {subs.length}</p>
+            {filteredSubs.length===0?<div style={{textAlign:'center',color:'#94a3b8',padding:40}}>📭 لا توجد نتائج</div>:
+              filteredSubs.map(s=>(
+                <div key={s.id} style={{border:'1px solid #e2e8f0',borderRadius:14,padding:16,background:'#fafafa',marginBottom:10}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:8}}>
+                    <div style={{flex:1,minWidth:200}}>
+                      <h4 style={{margin:0,fontSize:15,fontWeight:800,color:B.purple}}>{s.fullName||'—'}</h4>
+                      <p style={{margin:'3px 0',fontSize:12,color:'#64748b'}}>{s.idType}: {s.idNumber} | {s.mobile} | {s.branch||'—'}</p>
+                      <p style={{margin:0,fontSize:11,color:'#16a34a',fontWeight:700}}>المرجع: {s.id} | {s.submittedAt}</p>
                     </div>
-                  </>
-                ) : (
-                  <div style={{gridColumn:'span 2'}}><Fld label="العنوان التفصيلي" req={req('address')}><input style={inp()} value={fd.address} onChange={e=>uf('address', e.target.value)} placeholder="أدخل العنوان"/></Fld></div>
+                    <span className={`badge ${s.status==='pending'?'badge-yellow':s.status==='approved'?'badge-green':'badge-red'}`}>{s.status==='pending'?'⏳ قيد المراجعة':s.status==='approved'?'✅ معتمد':'❌ مرفوض'}</span>
+                  </div>
+                  {/* Expanded details */}
+                  {selectedSub===s.id&&<div className="fade-in" style={{background:'white',border:'1px solid #e2e8f0',borderRadius:10,padding:14,margin:'10px 0',fontSize:12,lineHeight:2}}>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+                      {Object.entries({الاسم:s.fullName,الهوية:s.idNumber,النوع:s.idType,الإصدار:s.idIssueDate,الانتهاء:s.idExpiry,الميلاد:s.birthDate,الدولة:s.country,المحافظة:s.birthGov,المديرية:s.birthDistrict,العنوان:s.address,الجوال:s.mobile,البريد:s.email,الفرع:s.branch,العملات:s.currencies?.join(', ')}).map(([k,v])=><div key={k}><strong style={{color:B.purple}}>{k}:</strong> {v||'—'}</div>)}
+                    </div>
+                    {s.idPhotos&&Object.entries(s.idPhotos).map(([k,v])=>v&&<div key={k} style={{marginTop:8}}><strong>{k}:</strong><br/><img src={v} style={{maxWidth:250,maxHeight:150,borderRadius:8,border:'1px solid #ddd',marginTop:4}} alt=""/></div>)}
+                    {/* V3.1: Admin Notes */}
+                    {isAdmin&&<div className="admin-notes-box">
+                      <p style={{fontSize:12,fontWeight:700,color:'#92400e',marginBottom:6}}>📝 ملاحظات الإدارة:</p>
+                      <textarea value={s.adminNote||''} onChange={e=>updateNote(s.id,e.target.value)} placeholder="أضف ملاحظة..."/>
+                    </div>}
+                    {s.adminNote&&!isAdmin&&<div style={{marginTop:8,padding:8,background:'#fffbeb',borderRadius:6,fontSize:12}}><strong style={{color:'#92400e'}}>ملاحظة الإدارة:</strong> {s.adminNote}</div>}
+                  </div>}
+                  <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:8}}>
+                    <button onClick={()=>setSelectedSub(selectedSub===s.id?null:s.id)} style={{padding:'6px 12px',background:'#f1f5f9',color:'#475569',borderRadius:8,fontSize:11,fontWeight:700}}>{selectedSub===s.id?'إخفاء':'👁 عرض'}</button>
+                    <button onClick={()=>printSub(s)} style={{padding:'6px 12px',background:'#dbeafe',color:'#1d4ed8',borderRadius:8,fontSize:11,fontWeight:700}}>🖨 PDF</button>
+                    <button onClick={()=>sendWhatsApp(s)} style={{padding:'6px 12px',background:'#dcfce7',color:'#16a34a',borderRadius:8,fontSize:11,fontWeight:700}}>📱 واتساب</button>
+                    {isAdmin&&s.status==='pending'&&<><button onClick={()=>updateSubStatus(s.id,'approved')} style={{padding:'6px 12px',background:'#dcfce7',color:'#16a34a',borderRadius:8,fontSize:11,fontWeight:700}}>✅ موافقة</button><button onClick={()=>updateSubStatus(s.id,'rejected')} style={{padding:'6px 12px',background:'#fef2f2',color:'#dc2626',borderRadius:8,fontSize:11,fontWeight:700}}>❌ رفض</button></>}
+                    {isAdmin&&<button onClick={()=>deleteSub(s.id)} style={{padding:'6px 12px',background:'#fef2f2',color:'#dc2626',borderRadius:8,fontSize:11,fontWeight:700}}>🗑</button>}
+                  </div>
+                  {s.reviewedBy&&<p style={{margin:'6px 0 0',fontSize:10,color:'#94a3b8'}}>المراجع: {s.reviewedBy} | {s.reviewDate}</p>}
+                </div>
+              ))
+            }
+          </div>}
+
+          {/* ==== USERS ==== */}
+          {tab==='users'&&isAdmin&&<div className="fade-in">
+            <h3 style={{fontSize:16,fontWeight:800,color:B.purple,marginBottom:16}}>👥 إدارة المستخدمين</h3>
+            <div className="settings-section"><div className="settings-title">➕ إضافة مستخدم</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}><input style={inp()} placeholder="اسم المستخدم" value={newUser.username} onChange={e=>setNewUser({...newUser,username:e.target.value})}/><input style={inp()} placeholder="كلمة المرور" value={newUser.password} onChange={e=>setNewUser({...newUser,password:e.target.value})}/><select style={inp()} value={newUser.branch} onChange={e=>setNewUser({...newUser,branch:e.target.value})}><option value="">الفرع</option>{settings.branches.map(b=><option key={b}>{b}</option>)}</select><button onClick={addUser} style={{padding:12,background:B.purple,color:'white',borderRadius:12,fontSize:14,fontWeight:800}}>✓ إضافة</button></div>
+            </div>
+            {users.map(u=>(<div key={u.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:14,background:'#fafafa',borderRadius:12,border:'1px solid #e2e8f0',marginBottom:8}}><div><p style={{margin:0,fontSize:14,fontWeight:700}}>{u.username}</p><p style={{margin:0,fontSize:11,color:'#64748b'}}>{u.branch||'—'}</p></div><div style={{display:'flex',gap:6}}><button onClick={()=>toggleUser(u.id)} style={{padding:'6px 12px',background:u.active?'#dcfce7':'#fef2f2',color:u.active?'#16a34a':'#dc2626',borderRadius:8,fontSize:11,fontWeight:700}}>{u.active?'🟢':'🔴'}</button><button onClick={()=>removeUser(u.id)} style={{padding:'6px 12px',background:'#fef2f2',color:'#dc2626',borderRadius:8,fontSize:11,fontWeight:700}}>🗑</button></div></div>))}
+            <div className="settings-section" style={{marginTop:20,background:'#fffbeb',borderColor:'#fef3c7'}}><div className="settings-title">🔐 بيانات المدير</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}><div><label style={{fontSize:10,fontWeight:700,color:'#64748b'}}>الاسم</label><input style={inp()} value={admin.username} onChange={e=>{const a={...admin,username:e.target.value};DB.set('admin',a);setAdmin(a);}}/></div><div><label style={{fontSize:10,fontWeight:700,color:'#64748b'}}>كلمة المرور</label><input style={inp()} value={admin.password} onChange={e=>{const a={...admin,password:e.target.value};DB.set('admin',a);setAdmin(a);}}/></div></div>
+            </div>
+          </div>}
+
+          {/* ==== SETTINGS ==== */}
+          {tab==='settings'&&isAdmin&&<div className="fade-in">
+            <h3 style={{fontSize:16,fontWeight:800,color:B.purple,marginBottom:16}}>⚙️ الإعدادات</h3>
+            {/* System Toggle */}
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:16,background:settings.systemActive?'#f0fdf4':'#fef2f2',borderRadius:14,marginBottom:16,border:`1px solid ${settings.systemActive?'#bbf7d0':'#fecaca'}`}}>
+              <div><h4 style={{margin:0,fontSize:14,fontWeight:800}}>{settings.systemActive?'🟢 النظام يعمل':'🔴 متوقف'}</h4><p style={{margin:'4px 0 0',fontSize:11,color:'#64748b'}}>العملاء لن يتمكنوا من التقديم عند الإيقاف</p></div>
+              <button onClick={()=>saveSetting('systemActive',!settings.systemActive)} style={{padding:'10px 20px',background:settings.systemActive?'#dc2626':'#16a34a',color:'white',borderRadius:10,fontSize:13,fontWeight:800}}>{settings.systemActive?'إيقاف':'تشغيل'}</button>
+            </div>
+
+            {/* Notifications */}
+            <div className="settings-section"><div className="settings-title">📧 الإشعارات</div>
+              <Fld label="بريد الإشعارات"><input style={inp()} value={settings.notifyEmail} onChange={e=>saveSetting('notifyEmail',e.target.value)}/></Fld>
+              <Fld label="رقم الواتساب"><input style={inp()} value={settings.whatsappNumber} onChange={e=>saveSetting('whatsappNumber',e.target.value)}/></Fld>
+              <Fld label="قالب رسالة واتساب (متغيرات: {'{name}'}, {'{id}'}, {'{branch}'}, {'{mobile}'})"><textarea style={{...inp(),minHeight:80,padding:10,resize:'vertical'}} value={settings.whatsappTemplate||''} onChange={e=>saveSetting('whatsappTemplate',e.target.value)}/></Fld>
+              <div style={{marginTop:10,padding:12,background:'#f8fafc',borderRadius:10,border:'1px solid #e2e8f0'}}>
+                <p style={{fontSize:12,fontWeight:700,color:B.purple,marginBottom:8}}>🔌 EmailJS</p>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:6}}>
+                  <input style={{...inp(),fontSize:12,padding:8}} placeholder="Service ID" value={settings.emailjs?.serviceId||''} onChange={e=>saveSetting('emailjs',{...settings.emailjs,serviceId:e.target.value})}/>
+                  <input style={{...inp(),fontSize:12,padding:8}} placeholder="Template ID" value={settings.emailjs?.templateId||''} onChange={e=>saveSetting('emailjs',{...settings.emailjs,templateId:e.target.value})}/>
+                  <input style={{...inp(),fontSize:12,padding:8}} placeholder="Public Key" value={settings.emailjs?.publicKey||''} onChange={e=>saveSetting('emailjs',{...settings.emailjs,publicKey:e.target.value})}/>
+                </div>
+              </div>
+            </div>
+
+            {/* Required Fields */}
+            <div className="settings-section"><div className="settings-title">📋 الحقول الإلزامية</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+                {Object.entries(settings.allFields||{}).map(([k,v])=>
+                  <label key={k} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',background:settings.requiredFields.includes(k)?'#f0fdf4':'#f8fafc',borderRadius:8,border:`1px solid ${settings.requiredFields.includes(k)?'#bbf7d0':'#e2e8f0'}`,cursor:'pointer',fontSize:12,fontWeight:600}}>
+                    <input type="checkbox" checked={settings.requiredFields.includes(k)} onChange={()=>toggleRequired(k)} style={{accentColor:B.purple,width:16,height:16}}/>{v}
+                  </label>
                 )}
-                
-                <div style={{gridColumn:'span 2', marginTop:10}}>
-                  <Fld label="نوع الجوال"><div style={{display:'flex', gap:10}}>
-                    <label style={{flex:1, padding:10, background:fd.mobileType==='yemeni'?B.light:'#f8fafc', border:`1px solid ${fd.mobileType==='yemeni'?B.purple:'#e2e8f0'}`, borderRadius:8, textAlign:'center', cursor:'pointer'}}><input type="radio" checked={fd.mobileType==='yemeni'} onChange={()=>uf('mobileType','yemeni')} style={{display:'none'}}/> يمني</label>
-                    <label style={{flex:1, padding:10, background:fd.mobileType==='intl'?B.light:'#f8fafc', border:`1px solid ${fd.mobileType==='intl'?B.purple:'#e2e8f0'}`, borderRadius:8, textAlign:'center', cursor:'pointer'}}><input type="radio" checked={fd.mobileType==='intl'} onChange={()=>uf('mobileType','intl')} style={{display:'none'}}/> دولي</label>
-                  </div></Fld>
-                  <Fld label="رقم الجوال" req={req('mobile')} err={errs.mobile}>
-                    <div style={{display:'flex', direction:'ltr', gap:5}}>
-                      {fd.mobileType === 'yemeni' ? <div style={{padding:'11px 16px', background:'#e2e8f0', borderRadius:'12px 0 0 12px'}}>+967</div> :
-                        <select style={{...inp(), width:120, borderRadius:'12px 0 0 12px'}} value={fd.countryCode} onChange={e=>uf('countryCode', e.target.value)}>
-                          {countryCodes.map(c => <option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}
-                        </select>
-                      }
-                      <input style={{...inp(errs.mobile), borderRadius:'0 12px 12px 0', flex:1}} value={fd.mobile} onChange={e=>uf('mobile', e.target.value.replace(/[^\d]/g,''))} placeholder="رقم الجوال"/>
-                    </div>
-                  </Fld>
-                </div>
-                <Fld label="الهاتف الثابت"><input style={inp()} value={fd.phone} onChange={e=>uf('phone', e.target.value)}/></Fld>
-                <Fld label="البريد الإلكتروني"><input style={inp()} value={fd.email} onChange={e=>uf('email', e.target.value)}/></Fld>
-                <div style={{gridColumn:'span 2'}}><Fld label="الفرع" req={req('branch')}><select style={inp()} value={fd.branch} onChange={e=>uf('branch', e.target.value)}><option value="">اختر</option>{settings.branches.map(b=><option key={b}>{b}</option>)}</select></Fld></div>
               </div>
-            </div>}
+            </div>
 
-            {step===5 && <div className="fade-in">
-              <Fld label="العملات المطلوبة" req={req('currencies')}><div style={{display:'flex', flexWrap:'wrap', gap:8}}>{settings.currencies.map(c=><button key={c} onClick={()=>{const n = fd.currencies.includes(c) ? fd.currencies.filter(x=>x!==c) : [...fd.currencies, c]; uf('currencies', n);}} style={chip(fd.currencies.includes(c))}>{c}</button>)}</div></Fld>
-              <div style={{height:20}}/>
-              <Fld label="وسائل الخدمة"><div style={{display:'flex', flexWrap:'wrap', gap:8}}>{settings.services.map(s=><button key={s} onClick={()=>{const n = fd.services.includes(s) ? fd.services.filter(x=>x!==s) : [...fd.services, s]; uf('services', n);}} style={chip(fd.services.includes(s))}>{s}</button>)}</div></Fld>
-            </div>}
+            {/* ID Rules */}
+            <div className="settings-section"><div className="settings-title">🔢 قواعد الهويات</div>
+              {Object.entries(settings.idRules).map(([type,rule])=>(<div key={type} style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,fontSize:12,flexWrap:'wrap'}}><strong style={{minWidth:100}}>{type}:</strong><span>أرقام:</span><input type="number" style={{...inp(),width:60,padding:6,fontSize:12}} value={rule.digits} onChange={e=>{const r={...settings.idRules};r[type]={...rule,digits:parseInt(e.target.value)||0};saveSetting('idRules',r);}}/><span>سنوات:</span><input type="number" style={{...inp(),width:60,padding:6,fontSize:12}} value={rule.expiryYears} onChange={e=>{const r={...settings.idRules};r[type]={...rule,expiryYears:parseInt(e.target.value)||0};saveSetting('idRules',r);}}/></div>))}
+            </div>
 
-            {step===6 && <div className="fade-in">
-              <div style={{marginBottom:20}}>
-                <h4 style={{fontSize:16, fontWeight:800, color:B.purple, marginBottom:10}}>نماذج التوقيعات الفرعية <span style={{color:'#dc2626'}}>*</span></h4>
-                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8}}>
-                  {[0,1,2].map(i => <SigBox key={i} id={i} label={`نموذج ${i+1}`} val={fd.sampleSignatures[i]}/>)}
-                </div>
-                {errs.sampleSignatures && <p style={{color:'#dc2626', fontSize:13, marginTop:8}}>⚠ {errs.sampleSignatures}</p>}
+            {/* Name & Age */}
+            <div className="settings-section"><div className="settings-title">📝 قواعد الاسم والعمر</div>
+              <div style={{display:'flex',gap:16,flexWrap:'wrap'}}><Fld label="الحد الأدنى لكلمات الاسم"><input type="number" style={{...inp(),width:80}} value={settings.minNameWords} onChange={e=>saveSetting('minNameWords',parseInt(e.target.value)||3)}/></Fld><Fld label="الحد الأدنى للعمر"><input type="number" style={{...inp(),width:80}} value={settings.minAge} onChange={e=>saveSetting('minAge',parseInt(e.target.value)||14)}/></Fld></div>
+            </div>
+
+            {/* Date Ranges */}
+            <div className="settings-section"><div className="settings-title">📅 نطاقات التواريخ</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+                <div><p style={{fontSize:11,fontWeight:700,color:'#64748b',marginBottom:4}}>تاريخ الإصدار</p><div style={{display:'flex',gap:6}}><input type="number" style={{...inp(),fontSize:12,padding:6}} value={settings.dateRanges?.issueDate?.min} onChange={e=>saveSetting('dateRanges',{...settings.dateRanges,issueDate:{...settings.dateRanges.issueDate,min:parseInt(e.target.value)}})}/><input type="number" style={{...inp(),fontSize:12,padding:6}} value={settings.dateRanges?.issueDate?.max} onChange={e=>saveSetting('dateRanges',{...settings.dateRanges,issueDate:{...settings.dateRanges.issueDate,max:parseInt(e.target.value)}})}/></div></div>
+                <div><p style={{fontSize:11,fontWeight:700,color:'#64748b',marginBottom:4}}>تاريخ الميلاد</p><div style={{display:'flex',gap:6}}><input type="number" style={{...inp(),fontSize:12,padding:6}} value={settings.dateRanges?.birthDate?.min} onChange={e=>saveSetting('dateRanges',{...settings.dateRanges,birthDate:{...settings.dateRanges.birthDate,min:parseInt(e.target.value)}})}/><input type="number" style={{...inp(),fontSize:12,padding:6}} value={settings.dateRanges?.birthDate?.max} onChange={e=>saveSetting('dateRanges',{...settings.dateRanges,birthDate:{...settings.dateRanges.birthDate,max:parseInt(e.target.value)}})}/></div></div>
               </div>
-              <h4 style={{fontSize:16, fontWeight:900, color:B.purple, marginBottom:10}}>التوقيع الرئيسي <span style={{color:'#dc2626'}}>*</span></h4>
-              <SigBox id="main" label="اضغط للتوقيع" val={fd.mainSignature}/>
-              {errs.mainSignature && <p style={{color:'#dc2626', fontSize:13, marginTop:8}}>⚠ {errs.mainSignature}</p>}
-            </div>}
+            </div>
 
-            {step===7 && <div className="fade-in">
-              <h4 style={{fontSize:16, fontWeight:800, color:B.purple, marginBottom:16}}>المرفقات ({fd.idType})</h4>
-              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
-                {getPhotoConfig().map(conf => (
-                  <div key={conf.id} style={{border:`2px dashed ${fd.idPhotos[conf.id]?'#16a34a':'#cbd5e1'}`, borderRadius:16, padding:14, textAlign:'center'}}>
-                    {fd.idPhotos[conf.id] ? <><img src={fd.idPhotos[conf.id]} style={{width:'100%', height:120, objectFit:'contain'}} alt=""/><button onClick={()=>{const n={...fd.idPhotos}; delete n[conf.id]; uf('idPhotos', n);}} style={{marginTop:8, padding:'6px 14px', background:'#fef2f2', color:'#dc2626', border:'none', borderRadius:8}}>إزالة</button></> :
-                      <div><i className="fas fa-id-card" style={{fontSize:32, color:'#94a3b8'}}/><p>{conf.label}</p><label style={{padding:'8px 16px', background:B.purple, color:'white', borderRadius:8, cursor:'pointer'}}>رفع<input type="file" accept="image/*" onChange={e=>handlePhoto(conf.id, e.target.files[0])} style={{display:'none'}}/></label></div>
-                    }
-                  </div>
-                ))}
+            {/* V3.1: PDF Settings */}
+            <div className="settings-section"><div className="settings-title">📄 إعدادات PDF</div>
+              <Fld label="أرقام الهواتف (مفصولة بفاصلة)"><input style={inp()} value={(settings.pdfSettings?.phones||[]).join(', ')} onChange={e=>updatePdfSetting('phones',e.target.value.split(',').map(x=>x.trim()).filter(Boolean))}/></Fld>
+              <Fld label="عنوان التذييل"><input style={inp()} value={settings.pdfSettings?.footerAddress||''} onChange={e=>updatePdfSetting('footerAddress',e.target.value)}/></Fld>
+              <Fld label="نص الإقرار"><textarea style={{...inp(),minHeight:60,padding:10,resize:'vertical'}} value={settings.pdfSettings?.declarationText||''} onChange={e=>updatePdfSetting('declarationText',e.target.value)}/></Fld>
+            </div>
+
+            {/* Dynamic Lists */}
+            {[['branches','🏢 الفروع'],['currencies','💰 العملات'],['services','📡 الخدمات'],['legalForms','⚖️ الأشكال القانونية']].map(([field,title])=>(
+              <div key={field} className="settings-section"><div className="settings-title">{title}</div>
+                {(settings[field]||[]).map((item,i)=>(<div key={i} style={{display:'flex',gap:6,marginBottom:4}}><input style={{...inp(),fontSize:12,padding:6}} value={item} onChange={e=>updateListItem(field,i,e.target.value)}/><button onClick={()=>removeListItem(field,i)} style={{padding:'4px 10px',background:'#fef2f2',color:'#dc2626',borderRadius:6,fontSize:12}}>✕</button></div>))}
+                <div style={{display:'flex',gap:6,marginTop:6}}><input style={{...inp(),fontSize:12,padding:6}} placeholder="جديد..." value={editList===field?newItem:''} onFocus={()=>setEditList(field)} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')addListItem(field);}}/><button onClick={()=>{setEditList(field);addListItem(field);}} style={{padding:'6px 12px',background:B.purple,color:'white',borderRadius:6,fontSize:12,fontWeight:700}}>+</button></div>
               </div>
-              {errs.photos && <p style={{color:'#dc2626', marginTop:10}}>⚠ {errs.photos}</p>}
-              <button onClick={submitForm} style={{width:'100%', marginTop:20, padding:16, background:'#16a34a', color:'white', border:'none', borderRadius:12, fontSize:17, fontWeight:900}}>🚀 تأكيد الطلب</button>
-            </div>}
-          </div>
+            ))}
 
-          {step < T && <div style={{padding:'12px 24px 20px', display:'flex', gap:10}}>
-            {step > 1 && <button onClick={()=>setStep(s=>s-1)} style={{padding:'12px 16px', background:'#f1f5f9', color:'#64748b', border:'none', borderRadius:12}}>→ السابق</button>}
-            <button onClick={nx} style={{flex:1, padding:14, background:B.purple, color:'white', border:'none', borderRadius:12, fontSize:15, fontWeight:900}}>{step===6 ? 'مراجعة المرفقات ←' : 'التالي ←'}</button>
+            {/* Reset */}
+            <button onClick={()=>{if(confirm('إعادة ضبط كل شيء؟')){DB.reset();refresh();showMsg('تم إعادة الضبط','info');}}} style={{padding:'10px 20px',background:'#dc2626',color:'white',borderRadius:10,fontSize:13,fontWeight:700,marginTop:10}}>⚠️ إعادة ضبط النظام</button>
           </div>}
         </div>
       </div>
     </div>
   );
 };
+</script>
 
-// ============ مكون PDF (مختصر) ============
-const PDFDoc = ({f, op}) => {
-  const WM = () => <div className="watermark-container"><img src={LOGO} alt="" className="watermark-img"/></div>;
-  return (
-    <div id="pdf-output" style={{display:'flex', flexDirection:'column', alignItems:'center', background:'#444', padding:20, gap:20}}>
-      <div className="page-a4"><WM/><div className="content-wrapper" style={{padding:'10mm'}}>
-        <div className="cover-header"><img src={LOGO} style={{height:100}}/><h1>ابن قايد المريسي</h1></div>
-        <div className="file-label">ملف حساب {f.fullName}</div>
-        <div><strong>الفرع:</strong> {f.branch} | <strong>الجوال:</strong> {f.mobile}</div>
-        <div className="designer-mark">Eslam Saeed</div>
-      </div></div>
+<!-- ============================================================ -->
+<!-- MODULE 5: Client Form (V3.1 - progress, shake, geo fallback)  -->
+<!-- ============================================================ -->
+<script type="text/babel">
+const ClientForm=({onBack})=>{
+  const settings=DB.get('settings');const reqFields=settings.requiredFields||[];
+  const[step,setStep]=useState(1);const T=7;
+  const[errs,setErrs]=useState({});const[toast,setToast]=useState(null);
+  const[submitted,setSubmitted]=useState(false);const[subData,setSubData]=useState(null);
+  const[activeSig,setActiveSig]=useState(null);const[shakeBtn,setShakeBtn]=useState(false);
+  const nameCount=Math.max(settings.minNameWords||4,3);
+  const nameLabels=['الاسم الأول','اسم الأب','اسم الجد','الاسم الرابع','الخامس','السادس'];
+  const stepLabels=['الشروط','البيانات','الهوية','العنوان','العملات','التوقيعات','المرفقات'];
+
+  const[fd,setFd]=useState({
+    accountType:'شخصي',names:Array(nameCount).fill(''),nickname:'',
+    businessName:'',businessType:'',legalForm:'',
+    idType:Object.keys(settings.idRules)[0],idNumber:'',idIssueDate:'',idExpiry:'',idIssuePlace:'',
+    birthDate:'',country:'اليمن',birthGov:'',birthDistrict:'',address:'',
+    mobileType:'yemeni',mobile:'',countryCode:'+967',phone:'',email:'',branch:'',
+    currencies:[],services:[],authorized:[{name:'',id:'',phone:'',permissions:[],signature:null}],
+    sampleSignatures:[null,null,null],mainSignature:null,idPhotos:{},termsAccepted:false
+  });
+
+  const uf=(f,v)=>{setFd(p=>({...p,[f]:v}));setErrs(p=>({...p,[f]:undefined}));};
+  const updateName=(i,v)=>{const n=[...fd.names];n[i]=v;uf('names',n);setErrs(p=>{const e={...p};delete e[`name_${i}`];return e;});};
+  const idRule=settings.idRules[fd.idType]||{digits:11,expiryYears:10};
+  const req=(f)=>reqFields.includes(f);
+
+  useEffect(()=>{if(fd.idIssueDate&&/^\d{4}-\d{2}-\d{2}$/.test(fd.idIssueDate)&&idRule)uf('idExpiry',addYears(fd.idIssueDate,idRule.expiryYears,idRule.expiryMinusDay));},[fd.idIssueDate,fd.idType]);
+  useEffect(()=>{uf('birthGov','');uf('birthDistrict','');uf('address','');},[fd.country]);
+  useEffect(()=>{uf('birthDistrict','');uf('address','');},[fd.birthGov]);
+
+  const validate=(s)=>{
+    const e={};
+    if(s===1&&!fd.termsAccepted)e.terms='يجب الموافقة';
+    if(s===2){if(req('names'))fd.names.forEach((n,i)=>{if(i<nameCount&&!n.trim())e[`name_${i}`]='مطلوب';});if(req('nickname')&&!fd.nickname.trim())e.nickname='مطلوب';if(fd.accountType==='تجاري'){if(req('businessName')&&!fd.businessName)e.businessName='مطلوب';if(req('legalForm')&&!fd.legalForm)e.legalForm='مطلوب';}}
+    if(s===3){if(req('idNumber')&&!fd.idNumber)e.idNumber='مطلوب';else if(fd.idNumber&&fd.idNumber.length!==idRule.digits)e.idNumber=`يجب ${idRule.digits} رقم`;if(req('idIssueDate')&&!/^\d{4}-\d{2}-\d{2}$/.test(fd.idIssueDate))e.idIssueDate='غير مكتمل';if(req('idIssuePlace')&&!fd.idIssuePlace)e.idIssuePlace='مطلوب';if(req('birthDate')&&!/^\d{4}-\d{2}-\d{2}$/.test(fd.birthDate))e.birthDate='غير مكتمل';else if(fd.birthDate&&calcAge(fd.birthDate)<settings.minAge)e.birthDate=`العمر أقل من ${settings.minAge}`;}
+    if(s===4){if(req('country')&&!fd.country)e.country='مطلوب';if(req('birthGov')&&!fd.birthGov)e.birthGov='مطلوب';if(req('mobile')&&!fd.mobile)e.mobile='مطلوب';else if(fd.mobileType==='yemeni'&&fd.mobile&&!/^(77|71|70|73|78)\d{7}$/.test(fd.mobile))e.mobile='رقم يمني غير صالح';if(req('branch')&&!fd.branch)e.branch='مطلوب';}
+    if(s===5&&req('currencies')&&fd.currencies.length===0)e.currencies='اختر عملة';
+    if(s===6){if(req('sampleSignatures')&&fd.sampleSignatures.some(x=>!x))e.sampleSignatures='أكمل التوقيعات';if(req('mainSignature')&&!fd.mainSignature)e.mainSignature='مطلوب';}
+    if(s===7&&req('photos')){const photos=getPhotoConfig();if(photos.some(p=>!fd.idPhotos[p.id]))e.photos='أرفق الصور';}
+    return e;
+  };
+  const nx=()=>{const er=validate(step);if(Object.keys(er).length===0){setErrs({});setStep(s=>Math.min(s+1,T));}else{setErrs(er);setToast({msg:'أكمل الحقول الإلزامية',type:'error'});setShakeBtn(true);setTimeout(()=>setShakeBtn(false),500);}};
+  const submitForm=()=>{let allE={};for(let i=1;i<=T;i++)Object.assign(allE,validate(i));if(Object.keys(allE).length>0){setErrs(allE);setToast({msg:'هناك حقول ناقصة',type:'error'});return;}const fullName=[...fd.names,fd.nickname].filter(Boolean).join(' ');const finalMobile=fd.mobileType==='yemeni'?'+967'+fd.mobile:fd.countryCode+fd.mobile;const seqId=nextSeqId();const sub={...fd,fullName,mobile:finalMobile,id:seqId,status:'pending',submittedAt:isoDate()};const subs=DB.get('submissions')||[];DB.set('submissions',[...subs,sub]);setSubData(sub);setSubmitted(true);try{sendNotification(sub);}catch(e){}};
+  const getPhotoConfig=()=>{if(fd.idType.includes('شخصية')||fd.idType.includes('ذكية')||fd.idType.includes('عائلية'))return[{id:'front',label:'الوجه الأمامي'},{id:'back',label:'الوجه الخلفي'}];if(fd.idType.includes('جواز'))return[{id:'passport',label:'صفحة البيانات'}];return[{id:'main',label:'صورة الهوية'}];};
+  const handlePhoto=(id,file)=>{if(!file)return;const r=new FileReader();r.onload=e=>setFd(p=>({...p,idPhotos:{...p.idPhotos,[id]:e.target.result}}));r.readAsDataURL(file);};
+
+  // V3.1: Geo data helpers with fallback
+  const provinces=getGeoProvinces(fd.country);
+  const districts=getGeoDistricts(fd.country,fd.birthGov);
+  const hasGeo=typeof worldGeoData!=='undefined'&&worldGeoData[fd.country];
+
+  if(submitted)return(
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#f1f5f9',padding:16}}>
+      <div className="bounce-in" style={{textAlign:'center',background:'white',padding:'40px 24px',borderRadius:24,boxShadow:'0 10px 30px rgba(0,0,0,0.1)',maxWidth:500,width:'100%'}}>
+        <div style={{width:80,height:80,borderRadius:'50%',background:'#dcfce7',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px',fontSize:40}}>✅</div>
+        <h2 style={{color:B.purple,fontWeight:900,marginBottom:8}}>تم تقديم الطلب بنجاح!</h2>
+        <p style={{color:'#16a34a',fontSize:15,fontWeight:700,marginBottom:4}}>تم رفع طلبكم إلى الإدارة للمراجعة</p>
+        <p style={{color:'#64748b',fontSize:14}}>الرقم المرجعي: <strong style={{color:B.purple,fontSize:18}}>{subData.id}</strong></p>
+        <div style={{textAlign:'right',background:'#f8fafc',borderRadius:14,padding:16,border:'1px solid #e2e8f0',margin:'20px 0'}}>
+          <h4 style={{fontSize:13,fontWeight:800,color:B.purple,margin:'0 0 8px'}}>ملخص بياناتكم:</h4>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4,fontSize:12}}>
+            {[['الاسم',subData.fullName],['الهوية',subData.idNumber],['الجوال',subData.mobile],['الفرع',subData.branch||'—'],['العملات',subData.currencies?.join(', ')]].map(([k,v],i)=><div key={i}><strong>{k}:</strong> {v||'—'}</div>)}
+          </div>
+        </div>
+        <button onClick={onBack} style={{padding:'12px 30px',background:B.purple,color:'white',borderRadius:12,fontSize:14,fontWeight:800}}>↩ العودة</button>
+      </div>
+    </div>
+  );
+
+  return(
+    <div style={{minHeight:'100vh',background:'#f1f5f9',padding:'16px 10px'}}>
+      {toast&&<Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
+      {activeSig!==null&&<SignatureModal label={activeSig==='main'?'التوقيع الرئيسي':`نموذج ${activeSig+1}`} init={activeSig==='main'?fd.mainSignature:fd.sampleSignatures[activeSig]} onSave={img=>{if(activeSig==='main')uf('mainSignature',img);else{const s=[...fd.sampleSignatures];s[activeSig]=img;uf('sampleSignatures',s);}}} onClose={()=>setActiveSig(null)}/>}
+      <div className="no-print" style={{maxWidth:700,margin:'0 auto'}}>
+        <div style={{marginBottom:14}}><button onClick={onBack} style={{padding:'8px 14px',background:'white',border:'1px solid #e2e8f0',borderRadius:10,fontSize:13,fontWeight:700,color:'#64748b'}}>↩ العودة</button></div>
+        <div className="card">
+          <div className="card-header">
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}><img src={LOGO} style={{height:42}} alt=""/><div><p style={{margin:0,fontSize:11,fontWeight:800,color:B.orange}}>مرحلة {step} من {T}</p><h2 style={{margin:0,fontSize:18,fontWeight:900,color:B.purple}}>{stepLabels[step-1]}</h2></div></div>
+            <ProgressSteps current={step} total={T} labels={stepLabels}/>
+          </div>
+          <div className="card-body">
+            {/* Step 1 */}
+            {step===1&&<div className="fade-in"><div style={{background:'#fffbeb',padding:16,borderRadius:16,marginBottom:20,maxHeight:300,overflowY:'auto',fontSize:14}}><h3 style={{color:B.purple,fontWeight:900,marginBottom:10}}>شروط فتح الحساب</h3><ul style={{paddingRight:20,lineHeight:2}}><li>تعبئة الاستمارة والتوقيع عليها.</li><li>إرفاق صورة الهوية سارية المفعول.</li><li>التوقيع أمام الموظف المختص.</li><li>الحساب لغرض الحوالات والمصارفة.</li><li>يتحمل العميل المسؤولية الكاملة.</li><li>يحق للمنشأة إغلاق الحساب عند المخالفة.</li></ul></div><label style={{display:'flex',alignItems:'center',gap:10,padding:14,background:fd.termsAccepted?B.light:'white',border:`2px solid ${errs.terms?'#fca5a5':fd.termsAccepted?B.purple:'#e2e8f0'}`,borderRadius:14,cursor:'pointer'}}><input type="checkbox" checked={fd.termsAccepted} onChange={e=>uf('termsAccepted',e.target.checked)} style={{width:20,height:20,accentColor:B.purple}}/><span style={{fontSize:14,fontWeight:700}}>أقر بموافقتي على الشروط</span></label>{errs.terms&&<p style={{color:'#dc2626',fontSize:12,marginTop:6}}>⚠ {errs.terms}</p>}</div>}
+            {/* Step 2 */}
+            {step===2&&<div className="fade-in"><Fld label="نوع الحساب"><div style={{display:'flex',gap:10}}>{['شخصي','تجاري'].map(t=><button key={t} onClick={()=>uf('accountType',t)} style={{...chip(fd.accountType===t),flex:1,textAlign:'center',padding:12}}>{t==='شخصي'?'👤':'🏢'} {t}</button>)}</div></Fld><div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:8}}>{fd.names.map((n,i)=>i<nameCount&&<Fld key={i} label={nameLabels[i]||`اسم ${i+1}`} req={req('names')} err={errs[`name_${i}`]}><input style={inp(errs[`name_${i}`])} value={n} onChange={e=>updateName(i,e.target.value)}/></Fld>)}<Fld label="اللقب" req={req('nickname')} err={errs.nickname}><input style={inp(errs.nickname)} value={fd.nickname} onChange={e=>uf('nickname',e.target.value)}/></Fld></div>{fd.accountType==='تجاري'&&<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:8}}><Fld label="الاسم التجاري" req={req('businessName')} err={errs.businessName}><input style={inp(errs.businessName)} value={fd.businessName} onChange={e=>uf('businessName',e.target.value)}/></Fld><Fld label="نوع النشاط"><input style={inp()} value={fd.businessType} onChange={e=>uf('businessType',e.target.value)}/></Fld><Fld label="الشكل القانوني" req={req('legalForm')} err={errs.legalForm}><select style={inp(errs.legalForm)} value={fd.legalForm} onChange={e=>uf('legalForm',e.target.value)}><option value="">اختر</option>{settings.legalForms.map(f=><option key={f}>{f}</option>)}</select></Fld></div>}</div>}
+            {/* Step 3 */}
+            {step===3&&<div className="fade-in" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}><Fld label="نوع الهوية" req={req('idType')}><select style={inp()} value={fd.idType} onChange={e=>{uf('idType',e.target.value);uf('idNumber','');uf('idExpiry','');}}>{Object.keys(settings.idRules).map(t=><option key={t}>{t}</option>)}</select></Fld><Fld label={`رقم الهوية (${idRule.digits} رقم)`} req={req('idNumber')} err={errs.idNumber} errMsg={errs.idNumber}><input style={inp(errs.idNumber)} value={fd.idNumber} onChange={e=>uf('idNumber',e.target.value.replace(/\D/g,'').slice(0,idRule.digits))} maxLength={idRule.digits}/><div style={{fontSize:10,color:fd.idNumber.length===idRule.digits?'#16a34a':'#94a3b8',marginTop:2}}>{fd.idNumber.length}/{idRule.digits}</div></Fld><div style={{gridColumn:'span 2'}}><Fld label="تاريخ الإصدار" req={req('idIssueDate')} err={errs.idIssueDate} errMsg={errs.idIssueDate}><DatePicker value={fd.idIssueDate} onChange={v=>uf('idIssueDate',v)} err={errs.idIssueDate} minY={settings.dateRanges?.issueDate?.min} maxY={settings.dateRanges?.issueDate?.max}/></Fld></div>{fd.idExpiry&&<div style={{gridColumn:'span 2'}}><Fld label={`تاريخ الانتهاء (تلقائي +${idRule.expiryYears} سنة)`}><div style={{padding:'10px 14px',background:'#f0fdf4',border:'1.5px solid #bbf7d0',borderRadius:12,fontSize:14,fontWeight:700,color:'#16a34a',textAlign:'center'}}>{new Date(fd.idExpiry).toLocaleDateString('ar-YE',{year:'numeric',month:'long',day:'numeric'})}</div></Fld></div>}<Fld label="مكان الإصدار" req={req('idIssuePlace')} err={errs.idIssuePlace}><input style={inp(errs.idIssuePlace)} value={fd.idIssuePlace} onChange={e=>uf('idIssuePlace',e.target.value)}/></Fld><div/><div style={{gridColumn:'span 2'}}><Fld label="تاريخ الميلاد" req={req('birthDate')} err={errs.birthDate} errMsg={errs.birthDate}><DatePicker value={fd.birthDate} onChange={v=>uf('birthDate',v)} err={errs.birthDate} minY={settings.dateRanges?.birthDate?.min} maxY={settings.dateRanges?.birthDate?.max}/>{fd.birthDate&&/^\d{4}-\d{2}-\d{2}$/.test(fd.birthDate)&&<div style={{fontSize:11,color:calcAge(fd.birthDate)<settings.minAge?'#dc2626':'#16a34a',marginTop:4,fontWeight:700}}>العمر: {calcAge(fd.birthDate)} سنة</div>}</Fld></div></div>}
+            {/* Step 4 - V3.1: geo fallback to text input */}
+            {step===4&&<div className="fade-in" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}><Fld label="الدولة" req={req('country')} err={errs.country}><select style={inp(errs.country)} value={fd.country} onChange={e=>uf('country',e.target.value)}><option value="">اختر</option>{(settings.countries||[]).map(c=><option key={c}>{c}</option>)}</select></Fld>{hasGeo?<><Fld label="المحافظة/المنطقة" req={req('birthGov')} err={errs.birthGov}>{provinces.length>0?<select style={inp(errs.birthGov)} value={fd.birthGov} onChange={e=>uf('birthGov',e.target.value)}><option value="">اختر</option>{provinces.map(p=><option key={p}>{p}</option>)}</select>:<input style={inp(errs.birthGov)} value={fd.birthGov} onChange={e=>uf('birthGov',e.target.value)} placeholder="اكتب المحافظة"/>}</Fld>{fd.birthGov&&<Fld label="المديرية">{districts.length>0?<select style={inp()} value={fd.birthDistrict} onChange={e=>uf('birthDistrict',e.target.value)}><option value="">اختر</option>{districts.map(d=><option key={d}>{d}</option>)}</select>:<input style={inp()} value={fd.birthDistrict} onChange={e=>uf('birthDistrict',e.target.value)} placeholder="اكتب المديرية"/>}</Fld>}<div style={{gridColumn:'span 2'}}><Fld label="العنوان التفصيلي"><input style={inp()} value={fd.address} onChange={e=>uf('address',e.target.value)} placeholder="الحي / الشارع"/></Fld></div></>:<><div style={{gridColumn:'span 1'}}><Fld label="المنطقة" req={req('birthGov')} err={errs.birthGov}><input style={inp(errs.birthGov)} value={fd.birthGov} onChange={e=>uf('birthGov',e.target.value)} placeholder="المنطقة/المحافظة"/></Fld></div><div style={{gridColumn:'span 2'}}><Fld label="العنوان"><input style={inp()} value={fd.address} onChange={e=>uf('address',e.target.value)} placeholder="العنوان الكامل"/></Fld></div></>}
+              <div style={{gridColumn:'span 2',marginTop:10}}><Fld label="نوع الجوال"><div style={{display:'flex',gap:10}}>{[['yemeni','🇾🇪 يمني'],['intl','🌍 دولي']].map(([v,l])=><label key={v} style={{flex:1,padding:10,background:fd.mobileType===v?B.light:'#f8fafc',border:`1px solid ${fd.mobileType===v?B.purple:'#e2e8f0'}`,borderRadius:8,textAlign:'center',cursor:'pointer',fontWeight:700,fontSize:13}}><input type="radio" checked={fd.mobileType===v} onChange={()=>uf('mobileType',v)} style={{display:'none'}}/>{l}</label>)}</div></Fld><Fld label="رقم الجوال" req={req('mobile')} err={errs.mobile} errMsg={errs.mobile}><div style={{display:'flex',direction:'ltr',gap:5}}>{fd.mobileType==='yemeni'?<div style={{padding:'11px 16px',background:'#e2e8f0',borderRadius:'12px 0 0 12px',fontWeight:700,fontSize:14}}>967+</div>:<select style={{...inp(),width:120,borderRadius:'12px 0 0 12px'}} value={fd.countryCode} onChange={e=>uf('countryCode',e.target.value)}>{countryCodes.map(c=><option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}</select>}<input style={{...inp(errs.mobile),borderRadius:'0 12px 12px 0',flex:1}} value={fd.mobile} onChange={e=>uf('mobile',e.target.value.replace(/\D/g,''))} placeholder="رقم الجوال"/></div></Fld></div>
+              <Fld label="هاتف ثابت"><input style={inp()} value={fd.phone} onChange={e=>uf('phone',e.target.value)}/></Fld><Fld label="البريد"><input type="email" style={inp()} value={fd.email} onChange={e=>uf('email',e.target.value)}/></Fld>
+              <div style={{gridColumn:'span 2'}}><Fld label="الفرع" req={req('branch')} err={errs.branch}><select style={inp(errs.branch)} value={fd.branch} onChange={e=>uf('branch',e.target.value)}><option value="">اختر</option>{settings.branches.map(b=><option key={b}>{b}</option>)}</select></Fld></div>
+            </div>}
+            {/* Step 5 */}
+            {step===5&&<div className="fade-in"><Fld label="العملات" req={req('currencies')} err={errs.currencies} errMsg={errs.currencies}><div style={{display:'flex',flexWrap:'wrap',gap:8}}>{settings.currencies.map(c=><button key={c} onClick={()=>{const n=fd.currencies.includes(c)?fd.currencies.filter(x=>x!==c):[...fd.currencies,c];uf('currencies',n);}} style={chip(fd.currencies.includes(c))}>{c}</button>)}</div></Fld><div style={{height:20}}/><Fld label="وسائل الخدمة"><div style={{display:'flex',flexWrap:'wrap',gap:8}}>{settings.services.map(s=><button key={s} onClick={()=>{const n=fd.services.includes(s)?fd.services.filter(x=>x!==s):[...fd.services,s];uf('services',n);}} style={chip(fd.services.includes(s))}>{s}</button>)}</div></Fld></div>}
+            {/* Step 6 */}
+            {step===6&&<div className="fade-in"><h4 style={{fontSize:16,fontWeight:800,color:B.purple,marginBottom:12}}>نماذج التوقيعات <span style={{color:'#dc2626'}}>*</span></h4><div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10}}>{[0,1,2].map(i=><SigBox key={i} onClick={()=>setActiveSig(i)} label={`نموذج ${i+1}`} val={fd.sampleSignatures[i]}/>)}</div>{errs.sampleSignatures&&<p style={{color:'#dc2626',fontSize:12,marginTop:8}}>⚠ {errs.sampleSignatures}</p>}<h4 style={{fontSize:16,fontWeight:900,color:B.purple,margin:'20px 0 12px'}}>التوقيع الرئيسي <span style={{color:'#dc2626'}}>*</span></h4><SigBox onClick={()=>setActiveSig('main')} label="اضغط للتوقيع" val={fd.mainSignature}/>{errs.mainSignature&&<p style={{color:'#dc2626',fontSize:12,marginTop:8}}>⚠ {errs.mainSignature}</p>}</div>}
+            {/* Step 7 */}
+            {step===7&&<div className="fade-in"><h4 style={{fontSize:16,fontWeight:800,color:B.purple,marginBottom:16}}>📷 المرفقات ({fd.idType})</h4><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>{getPhotoConfig().map(conf=>(<div key={conf.id} style={{border:`2px dashed ${fd.idPhotos[conf.id]?'#16a34a':'#cbd5e1'}`,borderRadius:16,padding:14,textAlign:'center'}}>{fd.idPhotos[conf.id]?<><img src={fd.idPhotos[conf.id]} style={{width:'100%',height:120,objectFit:'contain',borderRadius:8}} alt=""/><button onClick={()=>{const n={...fd.idPhotos};delete n[conf.id];uf('idPhotos',n);}} style={{marginTop:8,padding:'6px 14px',background:'#fef2f2',color:'#dc2626',borderRadius:8,fontSize:12}}>🗑 إزالة</button></>:<div><i className="fas fa-id-card" style={{fontSize:32,color:'#94a3b8'}}/><p style={{fontSize:13,fontWeight:700,color:'#64748b',marginBottom:8}}>{conf.label}</p><div style={{display:'flex',gap:6,justifyContent:'center'}}><label style={{padding:'8px 14px',background:B.purple,color:'white',borderRadius:8,fontSize:12,fontWeight:700,cursor:'pointer'}}>📁 رفع<input type="file" accept="image/*" onChange={e=>handlePhoto(conf.id,e.target.files[0])} style={{display:'none'}}/></label><label style={{padding:'8px 14px',background:B.orange,color:'white',borderRadius:8,fontSize:12,fontWeight:700,cursor:'pointer'}}>📷 كاميرا<input type="file" accept="image/*" capture="environment" onChange={e=>handlePhoto(conf.id,e.target.files[0])} style={{display:'none'}}/></label></div></div>}</div>))}</div>{errs.photos&&<p style={{color:'#dc2626',marginTop:10,fontSize:13}}>⚠ {errs.photos}</p>}<button onClick={submitForm} style={{width:'100%',marginTop:20,padding:16,background:'#16a34a',color:'white',borderRadius:14,fontSize:17,fontWeight:900,boxShadow:'0 6px 20px rgba(22,163,74,0.3)'}}>🚀 تأكيد وإرسال الطلب</button></div>}
+          </div>
+          {step<T&&<div className="card-footer">{step>1&&<button onClick={()=>{setErrs({});setStep(s=>s-1);}} style={{padding:'12px 16px',background:'#f1f5f9',color:'#64748b',borderRadius:12,fontSize:13,fontWeight:700}}>→ السابق</button>}<button onClick={nx} className={shakeBtn?'shake':''} disabled={step===1&&!fd.termsAccepted} style={{flex:1,padding:14,background:(step===1&&!fd.termsAccepted)?'#cbd5e1':B.purple,color:'white',borderRadius:12,fontSize:15,fontWeight:900}}>{step===6?'المرفقات ←':'التالي ←'}</button></div>}
+          <div style={{background:'#fafafa',padding:'10px 24px',display:'flex',justifyContent:'space-between',fontSize:9,fontWeight:700,color:'#94a3b8',borderTop:'1px solid #f1f5f9'}}><span>🔒 آمن</span><span>ابن قايد © {new Date().getFullYear()}</span></div>
+        </div>
+      </div>
     </div>
   );
 };
+</script>
 
-// ============ التطبيق الرئيسي ============
-const App = () => {
-  const [user, setUser] = useState(null);
-  const [showClientForm, setShowClientForm] = useState(false);
-  if(showClientForm) return <ClientForm onBack={()=>setShowClientForm(false)}/>;
-  if(user) return <AdminPanel user={user} onLogout={()=>setUser(null)}/>;
-  return <LoginScreen onLogin={setUser} onPublicForm={()=>setShowClientForm(true)}/>;
+<!-- ============================================================ -->
+<!-- MODULE 6: PDF Document V3.1 (5 pages, Aref Ruqaa, blue ink)   -->
+<!-- ============================================================ -->
+<script type="text/babel">
+const PDFDoc=({f,op})=>{
+  const td=todayAr();const s=DB.get('settings');const pdf=s.pdfSettings||{};
+  const WM=()=><div className="watermark-container"><img src={LOGO} alt="" className="watermark-img"/></div>;
+  const DM=()=><div className="designer-mark">Eslam Saeed</div>;
+  const Chk=({on})=><span className="box">{on?'✓':''}</span>;
+  const FT=({pg,total})=><div className="footer-small"><div>ابن قايد المريسي للصرافة والتحويلات</div><div>F-03-ACC</div><div>صفحة {pg}/{total||5}</div></div>;
+  // V3.1: Handwritten style for client data
+  const HW=({children})=><span className="pdf-handwritten">{children}</span>;
+  const FI=({val})=><div className="input"><HW>{val||''}</HW></div>;
+  const SL=({icon,text})=><div className="section-label"><i className={icon}/> {text}</div>;
+  const fullName=f.fullName||[...(f.names||[]),f.nickname].filter(Boolean).join(' ');
+  const phones=pdf.phones||['778999567','775122022','773308998','778419081'];
+  const footerAddr=pdf.footerAddress||'المركز الرئيسي: الضالع - مريس - الجبارة';
+  const declText=pdf.declarationText||'أقر بصحة كافة البيانات وأوافق على الشروط.';
+  const hasPhotos=f.idPhotos&&Object.values(f.idPhotos).some(Boolean);
+  const totalPages=hasPhotos?5:4;
+
+  return(
+    <div id="pdf-output" style={{display:'flex',flexDirection:'column',alignItems:'center',background:'#444',padding:20,gap:20}}>
+      {/* Page 1: Cover */}
+      <div className="page-a4"><WM/><div className="content-wrapper" style={{padding:'10mm 15mm 5mm'}}>
+        <div className="cover-header"><div className="logo-container"><img src={LOGO} className="logo-img" alt=""/></div><h1 className="company-title">ابن قايد المريسي للصرافة والتحويلات</h1><div className="company-subtitle">Ibn Qaid Al-Marisi Exchange</div></div>
+        <div className="file-label-box"><div className="file-label">ملف حساب عميل</div></div>
+        <div className="cover-fields">
+          <div className="field-row"><div className="field-label"><i className="fas fa-map-marker-alt"/> الفرع:</div><div className="input-display"><HW>{f.branch||''}</HW></div></div>
+          <div className="field-row"><div className="field-label"><i className="fas fa-user-tie"/> اسم العميل:</div><div className="input-display"><HW>{fullName}</HW></div></div>
+          <div className="field-row"><div className="field-label"><i className="fas fa-wallet"/> رقم الحساب:</div><div className="input-display account-input"><HW>{f.id||''}</HW></div></div>
+        </div>
+        <div className="cover-footer"><div className="contact-grid">{phones.map(p=><div key={p} className="contact-pill"><i className="fas fa-phone-alt"/>{p}</div>)}</div><div className="address-bar">{footerAddr}</div></div>
+      </div><DM/></div>
+
+      {/* Page 2: Terms */}
+      <div className="page-a4"><WM/><div className="content-wrapper" style={{padding:'15mm 20mm'}}>
+        <div className="title-box"><div className="main-title">شروط فتح حساب</div></div>
+        <ul className="terms-list">{[['تعبئة الاستمارة','والتوقيع عليها مع إرفاق صورة البطاقة الشخصية.'],['نماذج التوقيعات','أمام الموظف المختص حصراً.'],['السجل التجاري','ساري المفعول بالنسبة للوكلاء والعملاء.'],['التفويض','لمن سيدير الحسابات.'],['حسن التعامل','تجنب أي تصرف يسيء.'],['الغرض','الإيداعات والتحويلات والمصارفة فقط.'],['الاستخدام المشروع','يُمنع غير القانوني.'],['مسؤولية المفوضين','يتحمل العميل المسؤولية.'],['صلاحية الإغلاق','عند عدم الالتزام.'],['العنوان الرسمي','إخطار خطي خلال 15 يوماً.'],['صحة البيانات','المسؤولية عن بيانات مغلوطة.'],['التحديثات','تخضع الشروط للتحديث.']].map(([t,d],i)=><li key={i}><strong>{t}:</strong> {d}</li>)}</ul>
+        <div className="declaration-section"><div className="declaration-text">تم الاطلاع والموافقة</div><div className="signature-row"><div className="sig-block"><span className="sig-label">اسم العميل:</span><div className="sig-input"><HW>{fullName}</HW></div></div><div className="sig-block"><span className="sig-label">التوقيع:</span><div className="sig-input">{f.mainSignature&&<img src={f.mainSignature} style={{height:24}} alt=""/>}</div></div></div></div>
+        <FT pg={2} total={totalPages}/>
+      </div><DM/></div>
+
+      {/* Page 3: Data */}
+      <div className="page-a4"><WM/><div className="content-wrapper" style={{padding:'8mm 12mm',gap:12}}>
+        <div className="page-header"><div className="header-title">بيانات العميل</div><div className="header-meta"><div className="meta-field">المرجع: {f.id}</div><div className="meta-field">{td}</div></div></div>
+        <div className="section-container"><SL icon="fas fa-user-circle" text="1. البيانات الأساسية"/><div className="fields-grid">{[[8,'الاسم',fullName],[4,'اللقب',f.nickname],[3,'نوع الهوية',f.idType],[3,'الرقم',f.idNumber],[3,'الإصدار',f.idIssueDate],[3,'الانتهاء',f.idExpiry]].map(([sp,l,v],i)=><div key={i} className="field-group" style={{gridColumn:`span ${sp}`}}><span className="label">{l}:</span><FI val={v}/></div>)}</div></div>
+        <div className="section-container"><SL icon="fas fa-map-marker-alt" text="2. العنوان"/><div className="fields-grid">{[[12,'العنوان',`${f.country||''} ${f.birthGov?'- '+f.birthGov:''} ${f.birthDistrict?'- '+f.birthDistrict:''} ${f.address?'- '+f.address:''}`],[4,'الجوال',f.mobile],[4,'الهاتف',f.phone],[4,'البريد',f.email]].map(([sp,l,v],i)=><div key={i} className="field-group" style={{gridColumn:`span ${sp}`}}><span className="label">{l}:</span><FI val={v}/></div>)}</div></div>
+        <div className="section-container"><SL icon="fas fa-coins" text="3. العملات"/><div className="checkbox-row">{(s?.currencies||[]).map(c=><div key={c} className="checkbox-item"><Chk on={f.currencies?.includes(c)}/>{c}</div>)}</div></div>
+        <div className="section-container"><SL icon="fas fa-headset" text="4. الخدمات"/><div className="checkbox-row">{(s?.services||[]).map(sv=><div key={sv} className="checkbox-item"><Chk on={f.services?.includes(sv)}/>{sv}</div>)}</div></div>
+        <div className="section-container"><SL icon="fas fa-signature" text="5. التوقيعات"/><div className="signatures-container-p3"><div className="sig-grid">{[0,1,2].map(i=><div key={i} className="page-3-sig-card"><div className="sig-card-header">توقيع ({i+1})</div>{f.sampleSignatures?.[i]&&<img src={f.sampleSignatures[i]} style={{maxHeight:60,maxWidth:'90%'}} alt=""/>}</div>)}</div></div></div>
+        <FT pg={3} total={totalPages}/>
+      </div><DM/></div>
+
+      {/* Page 4: Auth & Approvals */}
+      <div className="page-a4"><WM/><div className="content-wrapper" style={{padding:'8mm 12mm',gap:16,justifyContent:'space-between'}}>
+        <div className="page-header"><div className="header-title">المفوضين والموافقات</div></div>
+        <div><SL icon="fas fa-users-cog" text="6. المفوضون"/><div className="auth-table-container"><table className="auth-table"><thead><tr><th style={{width:'30%'}}>البيانات</th><th style={{width:'45%'}}>الصلاحيات</th><th style={{width:'25%'}}>التوقيع</th></tr></thead><tbody>{[0,1].map(i=>{const a=f.authorized?.[i]||{};return<tr key={i}><td><div style={{marginBottom:6}}><strong>الاسم:</strong> <HW>{a.name||'....'}</HW></div><div style={{marginBottom:6}}><strong>الهوية:</strong> <HW>{a.id||'....'}</HW></div><div><strong>الهاتف:</strong> <HW>{a.phone||'....'}</HW></div></td><td><div className="permission-grid">{perms.map(p=><div key={p} className="perm-item"><Chk on={a.permissions?.includes(p)}/>{p}</div>)}</div></td><td style={{textAlign:'center'}}><div style={{height:80,border:'1px dashed #999',margin:4,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center'}}>{a.signature&&<img src={a.signature} style={{maxHeight:60,maxWidth:'90%'}} alt=""/>}</div></td></tr>;})}</tbody></table></div><div className="legal-note">⚠ يتحمل صاحب الحساب المسؤولية الكاملة.</div></div>
+        {/* V3.1: Admin note in PDF */}
+        {f.adminNote&&<div style={{background:'#fffbeb',border:'1px solid #fef3c7',borderRadius:8,padding:12}}><strong style={{color:'#92400e'}}>ملاحظات الإدارة:</strong> <HW>{f.adminNote}</HW></div>}
+        <div className="approval-section"><SL icon="fas fa-file-signature" text="7. إقرار العميل"/><div className="approval-text">{declText}</div><div className="approval-grid">{[['الاسم',fullName],['التوقيع',null],['التاريخ',td]].map(([l,v],i)=><div key={i} className="field-line"><span className="lbl">{l}:</span><div className="line">{i===1&&f.mainSignature?<img src={f.mainSignature} style={{height:24}} alt=""/>:<HW>{v}</HW>}</div></div>)}</div></div>
+        <div className="employee-auth"><div style={{fontSize:11,fontWeight:700,width:'50%'}}>✓ مصادقة الموظف:<div style={{fontWeight:400,fontSize:10,marginTop:4}}>تم التوقيع أمامي والمطابقة.</div></div><div style={{display:'flex',gap:16,width:'45%'}}>{[['الموظف',op?.username],['التوقيع','']].map(([l,v],i)=><div key={i} className="field-line"><span className="lbl">{l}:</span><div className="line"><HW>{v}</HW></div></div>)}</div></div>
+        <div className="admin-decision"><div className="admin-title">قرار الإدارة</div><div className="admin-grid"><div style={{textAlign:'center'}}><div className="line" style={{width:110}}/><span className="lbl" style={{color:'var(--brand-purple)'}}>مدير الفرع</span></div><div className="stamp-box">ختم<br/>المنشأة</div><div style={{textAlign:'center'}}><div className="line" style={{width:110}}/><span className="lbl" style={{color:'var(--brand-purple)'}}>المدير العام</span></div></div></div>
+        <FT pg={4} total={totalPages}/>
+      </div><DM/></div>
+
+      {/* V3.1: Page 5 - ID Photos */}
+      {hasPhotos&&<div className="page-a4"><WM/><div className="content-wrapper" style={{padding:'10mm 15mm'}}>
+        <div className="page-header"><div className="header-title">مرفقات الهوية</div><div className="header-meta"><div className="meta-field">{fullName}</div><div className="meta-field">{f.id}</div></div></div>
+        <div className="photos-page-grid">{Object.entries(f.idPhotos||{}).map(([key,src])=>src&&<div key={key} className="photo-frame"><img src={src} alt={key}/><div className="photo-frame-label">{key==='front'?'الوجه الأمامي':key==='back'?'الوجه الخلفي':key==='passport'?'صفحة البيانات':'صورة الهوية'}</div></div>)}</div>
+        <div style={{marginTop:'auto',padding:20,textAlign:'center',fontSize:12,color:'#64748b'}}>تم التحقق من صحة المرفقات ومطابقتها مع الأصل</div>
+        <FT pg={5} total={5}/>
+      </div><DM/></div>}
+    </div>
+  );
 };
-ReactDOM.render(<App/>, document.getElementById('root'));
+</script>
+
+<!-- ============================================================ -->
+<!-- MODULE 7: Root App (V3.1 - URL routing)                       -->
+<!-- ============================================================ -->
+<script type="text/babel">
+const App=()=>{
+  const[user,setUser]=useState(null);
+  const[view,setView]=useState(()=>{
+    // V3.1: URL routing
+    const hash=window.location.hash;
+    if(hash==='#admin')return 'login';
+    return 'client'; // Default: client form
+  });
+
+  useEffect(()=>{
+    const handleHash=()=>{
+      const hash=window.location.hash;
+      if(hash==='#admin'){setView('login');setUser(null);}
+      else{setView('client');setUser(null);}
+    };
+    window.addEventListener('hashchange',handleHash);
+    return()=>window.removeEventListener('hashchange',handleHash);
+  },[]);
+
+  if(user)return<AdminPanel user={user} onLogout={()=>{setUser(null);setView('login');}}/>;
+  if(view==='login')return<LoginScreen onLogin={setUser} onPublicForm={()=>setView('client')}/>;
+  return<ClientForm onBack={()=>setView('login')}/>;
+};
+ReactDOM.render(<App/>,document.getElementById('root'));
 </script>
 </body>
 </html>
