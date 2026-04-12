@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ابن قايد المريسي - نظام الحسابات V2.4 (لوحة التحكم الشاملة)</title>
+<title>ابن قايد المريسي - نظام الحسابات V2.4.1</title>
 <link rel="icon" href="https://i.ibb.co/Zpqj6KF0/251029-001757.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -11,7 +11,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="./geo-data.js"></script>
 <style>
 /* ================= أنماط واجهة النظام ================= */
 *{margin:0;padding:0;box-sizing:border-box}
@@ -128,12 +127,68 @@ input, select, textarea { font-size: 15px !important; padding: 12px 14px !import
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const {useState, useRef, useEffect, useCallback} = React;
+const {useState, useRef, useEffect} = React;
 
 const B = {purple:'#802a5d', orange:'#f39c12', dark:'#4a1a35', light:'#f8f0f5'};
 const LOGO = "https://i.ibb.co/Zpqj6KF0/251029-001757.jpg";
 
-// ============ DATABASE V2.4 (localStorage) ============
+// ============ بيانات الجغرافيا العالمية (مدمجة) ============
+const worldGeoData = {
+  "اليمن": {
+    "أمانة العاصمة": { "صنعاء القديمة": ["حي صنعاء القديمة"], "الوحدة": ["حي الوحدة"], "السبعين": ["حي السبعين"], "التحرير": ["حي التحرير"], "معين": ["حي معين"], "الثورة": ["حي الثورة"], "شعوب": ["حي شعوب"], "الصافية": ["حي الصافية"], "آزال": ["حي آزال"], "بني الحارث": ["حي بني الحارث"] },
+    "محافظة صنعاء": { "بني مطر": ["شهاب الأسفل", "شهاب الأعلى"], "سنحان وبني بهلول": ["سنحان", "وادي الأجبار"] },
+    "محافظة عدن": { "صيرة (كريتر)": ["صيرة"], "المعلا": ["المعلا"], "التواهي": ["التواهي", "القلوعة"], "خور مكسر": ["خور مكسر"], "الشيخ عثمان": ["الشيخ عثمان", "الممدارة"], "المنصورة": ["المنصورة", "القاهرة"], "دار سعد": ["دار سعد"], "البريقة": ["البريقة", "مدينة الشعب"] },
+    "محافظة تعز": { "القاهرة": ["حي القاهرة"], "المظفر": ["حي المظفر"], "صالة": ["حي صالة"] },
+    "محافظة الحديدة": { "الحوك": ["حي الحوك"], "الميناء": ["حي الميناء"], "الحالي": ["حي الحالي"] },
+    "محافظة حضرموت": { "المكلا": ["حي المكلا"], "الشحر": ["مدينة الشحر", "الحامي"], "سيئون": ["مدينة سيئون", "تاربة"] },
+    "محافظة إب": { "الظهار": ["حي الظهار"], "المشنة": ["حي المشنة"], "جبلة": ["جبلة", "الربادي"] },
+    "محافظة أبين": { "زنجبار": ["زنجبار"], "خنفر": ["جعار", "الكود"] },
+    "محافظة الضالع": { "الضالع": ["مدينة الضالع"], "قعطبة": ["مدينة قعطبة", "مريس"], "دمت": ["مدينة دمت"] }
+  },
+  "المملكة العربية السعودية": {
+    "منطقة الرياض": { "الرياض": ["الرياض", "الدرعية"], "الخرج": ["السلمية", "الدلم"] },
+    "منطقة مكة المكرمة": { "جدة": ["جدة", "أبحر"], "مكة المكرمة": ["مكة", "العزيزية"] },
+    "المنطقة الشرقية": { "الدمام": ["الدمام", "الخبر"], "الأحساء": ["الهفوف", "المبرز"] }
+  },
+  "الإمارات العربية المتحدة": {
+    "إمارة أبوظبي": { "أبوظبي": ["مدينة أبوظبي"], "العين": ["مدينة العين"] },
+    "إمارة دبي": { "دبي": ["ديرة", "بر دبي", "الكرامة"] }
+  },
+  "جمهورية مصر العربية": {
+    "محافظة القاهرة": { "مدينة نصر": ["مدينة نصر"], "مصر الجديدة": ["مصر الجديدة"] },
+    "محافظة الجيزة": { "الدقي": ["الدقي"], "العجوزة": ["العجوزة"], "الهرم": ["الهرم"] }
+  },
+  "الولايات المتحدة الأمريكية": {
+    "ولاية كاليفورنيا": { "لوس أنجلوس": ["لوس أنجلوس", "لونغ بيتش"], "سان دييغو": ["سان دييغو"] },
+    "ولاية نيويورك": { "نيويورك": ["مانهاتن", "بروكلين", "كوينز"] },
+    "ولاية تكساس": { "هيوستن": ["هيوستن"], "دالاس": ["دالاس"] }
+  },
+  "المملكة المتحدة": {
+    "إنجلترا": { "لندن الكبرى": ["لندن", "وستمنستر"], "مانشستر الكبرى": ["مانشستر"] }
+  },
+  "ألمانيا": {
+    "برلين": { "برلين": ["ميته", "نويكولن"] },
+    "بافاريا": { "ميونخ": ["ميونخ"] }
+  }
+};
+
+// قائمة رموز الدول (مبسطة)
+const countryCodes = [
+  { name: "اليمن", code: "+967" },
+  { name: "السعودية", code: "+966" },
+  { name: "الإمارات", code: "+971" },
+  { name: "قطر", code: "+974" },
+  { name: "البحرين", code: "+973" },
+  { name: "الكويت", code: "+965" },
+  { name: "عمان", code: "+968" },
+  { name: "مصر", code: "+20" },
+  { name: "الأردن", code: "+962" },
+  { name: "الولايات المتحدة", code: "+1" },
+  { name: "المملكة المتحدة", code: "+44" },
+  { name: "ألمانيا", code: "+49" }
+];
+
+// ============ قاعدة البيانات ============
 const DB = {
   get: (k) => {try{return JSON.parse(localStorage.getItem('iq_'+k))}catch{return null}},
   set: (k, v) => {localStorage.setItem('iq_'+k, JSON.stringify(v))},
@@ -141,32 +196,27 @@ const DB = {
     if(!DB.get('initialized')){
       const currYear = new Date().getFullYear();
       DB.set('admin', {username:'Eslam saeed', password:'775122022', role:'admin'});
-      DB.set('users', []); // Array of {id, username, password, role}
+      DB.set('users', []);
       DB.set('submissions', []);
       DB.set('settings', {
         systemActive: true,
         whatsappNumber: '+967775122022',
-        branches: ["المركز الرئيسي - الضالع","فرع مريس","فرع دمت","فرع قعطبة","فرع صنعاء","فرع عدن","فرع تعز"],
+        branches: ["المركز الرئيسي - الضالع","فرع مريس","فرع دمت","فرع قعطبة"],
         currencies: ['ريال يمني','ريال سعودي','دولار أمريكي','درهم إماراتي','يورو'],
         services: ['الحضور الشخصي','الاتصال الهاتفي','رسائل SMS','تطبيق WhatsApp'],
         countries: Object.keys(worldGeoData),
         legalForms: ["مؤسسة فردية", "شركة ذات مسؤولية محدودة", "شركة تضامنية", "شركة مساهمة"],
-        
-        // Date Ranges
         dateRanges: {
             issueDate: { min: currYear - 15, max: currYear },
             birthDate: { min: 1950, max: 2012 }
         },
-        
-        nameFieldCount: 3, 
+        nameFieldCount: 3,
         idRules: {
           'بطاقة شخصية ذكية': {digits: 12, expiryYears: 10},
           'بطاقة شخصية': {digits: 11, expiryYears: 10},
           'جواز سفر': {digits: 8, expiryYears: 6},
           'بطاقة عائلية': {digits: 11, expiryYears: 10}
         },
-
-        // Mandatory Fields
         requiredFields: ['names', 'nickname', 'idType', 'idNumber', 'idIssueDate', 'idIssuePlace', 'birthDate', 'country', 'birthGov', 'mobile', 'branch', 'currencies', 'mainSignature', 'photos', 'sampleSignatures']
       });
       DB.set('initialized', true);
@@ -175,7 +225,7 @@ const DB = {
 };
 DB.init();
 
-// ============ HELPERS ============
+// ============ المساعدات ============
 const today = () => new Date().toLocaleDateString('ar-YE',{year:'numeric',month:'long',day:'numeric'});
 const isoDate = () => new Date().toISOString().split('T')[0];
 const addYears = (dateStr, years) => {
@@ -192,7 +242,7 @@ const ALL_FIELDS = {
     mainSignature: 'التوقيع الرئيسي', photos: 'مرفقات الهوية', sampleSignatures: 'نماذج التوقيعات'
 };
 
-// ============ SHARED UI ============
+// ============ واجهة المستخدم المشتركة ============
 const inp = (err) => ({width:'100%', padding:'11px 13px', background:err?'#fef2f2':'#f8fafc', border:`1.5px solid ${err?'#fca5a5':'#e2e8f0'}`, borderRadius:12, outline:'none', fontSize:15, boxSizing:'border-box'});
 const chip = (on) => ({padding:'8px 14px', borderRadius:10, border:`1.5px solid ${on?B.purple:'#e2e8f0'}`, background:on?B.purple:'white', color:on?'white':'#64748b', fontSize:13, fontWeight:700, cursor:'pointer'});
 const Fld = ({label, req, err, errMsg, children}) => <div style={{marginBottom:10}}><label style={{display:'flex',alignItems:'center',gap:4,fontSize:13,fontWeight:700,color:err?'#ef4444':'#64748b',marginBottom:3}}>{label}{req&&<span style={{color:'#ef4444'}}>*</span>}{err&&<span style={{fontSize:10,color:'#ef4444',background:'#fef2f2',padding:'1px 6px',borderRadius:4}}>⚠ {errMsg||'مطلوب'}</span>}</label>{children}</div>;
@@ -203,7 +253,7 @@ const Toast = ({msg, type, onClose}) => {
   return <div className="toast" style={{background:c.bg,color:c.color}}><span style={{fontSize:16}}>{c.icon}</span>{msg}</div>;
 };
 
-// ============ CUSTOM DATE PICKER V4 ============
+// ============ منتقي التاريخ المحسن ============
 const DatePicker = ({ value, onChange, err, minY, maxY }) => {
     const [day, setDay] = useState('');
     const [month, setMonth] = useState('');
@@ -267,7 +317,7 @@ const DatePicker = ({ value, onChange, err, minY, maxY }) => {
     );
 };
 
-// ============ FULL SCREEN SIGNATURE MODAL ============
+// ============ نافذة التوقيع ============
 const SignatureModal = ({ label, onSave, onClose, init }) => {
   const ref = useRef(null); const [dr, setDr] = useState(false); const [has, setHas] = useState(!!init);
   
@@ -300,7 +350,7 @@ const SignatureModal = ({ label, onSave, onClose, init }) => {
   );
 };
 
-// ============ LOGIN ============
+// ============ شاشة الدخول ============
 const LoginScreen = ({onLogin, onPublicForm}) => {
   const [username, setUsername] = useState(''); const [pass, setPass] = useState(''); const [err, setErr] = useState('');
   const settings = DB.get('settings');
@@ -324,7 +374,7 @@ const LoginScreen = ({onLogin, onPublicForm}) => {
         <div style={{padding:'40px 32px 32px'}}>
           <div style={{textAlign:'center', marginBottom:32}}>
             <img src={LOGO} style={{height:80, marginBottom:12}} alt=""/>
-            <h1 style={{fontSize:22, fontWeight:900, color:B.purple}}>نظام فتح الحسابات V2.4</h1>
+            <h1 style={{fontSize:22, fontWeight:900, color:B.purple}}>نظام فتح الحسابات V2.4.1</h1>
           </div>
           {err && <div style={{padding:10, background:'#fef2f2', color:'#dc2626', borderRadius:10, marginBottom:14, fontSize:13, fontWeight:700}}>{err}</div>}
           <div style={{marginBottom:14}}><input type="text" value={username} onChange={e=>{setUsername(e.target.value);setErr('');}} placeholder="اسم المستخدم" style={inp()}/></div>
@@ -337,32 +387,13 @@ const LoginScreen = ({onLogin, onPublicForm}) => {
   );
 };
 
-// ============ ADMIN PANEL (Role Based & Dynamic Settings) ============
+// ============ لوحة الإدارة (نسخة مختصرة ومصححة) ============
 const AdminPanel = ({user, onLogout}) => {
   const [tab, setTab] = useState('submissions');
   const [subs, setSubs] = useState(DB.get('submissions')||[]);
   const [settings, setSettings] = useState(DB.get('settings'));
-  const [adminData, setAdminData] = useState(DB.get('admin'));
-  const [systemUsers, setSystemUsers] = useState(DB.get('users')||[]);
-  const [toast, setToast] = useState(null);
   const [showPDF, setShowPDF] = useState(null);
-  const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({length: 100}, (_, i) => currentYear + 20 - i);
-  const digitOptions = Array.from({length: 16}, (_, i) => i + 5);
-
-  const isAdmin = user.role === 'admin';
-  const showT = (msg, type='success') => {setToast({msg, type}); setTimeout(()=>setToast(null),3000);};
-  const updateSettings = (k, v) => {const s={...settings,[k]:v}; DB.set('settings', s); setSettings(s);};
   
-  const saveAdmin = () => {DB.set('admin', adminData); showT('تم حفظ بيانات المدير الرئيسي');};
-  const addUser = (e) => {
-      e.preventDefault();
-      const u = {id: Date.now(), username: e.target.u_name.value, password: e.target.u_pass.value, role: e.target.u_role.value};
-      if(!u.username || !u.password) return showT('أكمل البيانات', 'error');
-      const updated = [...systemUsers, u]; DB.set('users', updated); setSystemUsers(updated); showT('تم إضافة مستخدم'); e.target.reset();
-  };
-  const deleteUser = (id) => {const updated = systemUsers.filter(u=>u.id!==id); DB.set('users', updated); setSystemUsers(updated); showT('تم حذف المستخدم');};
-
   const printSub = (sub) => {
     setShowPDF(sub);
     setTimeout(() => {
@@ -374,52 +405,20 @@ const AdminPanel = ({user, onLogout}) => {
     }, 500);
   };
 
-  const ArrayEditor = ({title, listKey}) => {
-      const [newVal, setNewVal] = useState('');
-      const add = () => { if(newVal) {updateSettings(listKey, [...settings[listKey], newVal]); setNewVal('');} };
-      return (
-        <div style={{background:'#f8fafc', borderRadius:14, padding:16, border:'1px solid #e2e8f0', marginBottom:16}}>
-          <h4 style={{fontSize:14, fontWeight:700, color:B.purple, marginBottom:10}}>{title}</h4>
-          <div style={{display:'flex', flexWrap:'wrap', gap:6, marginBottom:10}}>
-            {settings[listKey].map((item, i) => (
-              <div key={i} className="badge" style={{background:'white', border:'1px solid #cbd5e1', fontSize:13, padding:'6px 12px'}}>{item} <button onClick={()=>updateSettings(listKey, settings[listKey].filter((_,j)=>j!==i))} style={{background:'none',border:'none',color:'#dc2626',marginRight:6}}>✕</button></div>
-            ))}
-          </div>
-          <div style={{display:'flex', gap:8}}><input style={{...inp(), flex:1, padding:'10px'}} placeholder="إضافة جديد..." value={newVal} onChange={e=>setNewVal(e.target.value)} onKeyDown={e=>e.key==='Enter'&&add()}/><button onClick={add} style={{padding:'10px 18px', background:B.purple, color:'white', border:'none', borderRadius:10, fontSize:13, fontWeight:700}}>إضافة</button></div>
-        </div>
-      );
-  };
-
-  const toggleReq = (f) => {
-      const curr = settings.requiredFields || [];
-      const updated = curr.includes(f) ? curr.filter(x=>x!==f) : [...curr, f];
-      updateSettings('requiredFields', updated);
-  };
-
   return (
     <div className="no-print" style={{minHeight:'100vh', background:'#f1f5f9', padding:16}}>
-      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
       {showPDF && <div style={{position:'fixed', inset:0, zIndex:2000, background:'#444', overflow:'auto'}}><button onClick={()=>setShowPDF(null)} style={{position:'fixed', top:16, left:16, zIndex:2001, background:'white', border:'none', borderRadius:'50%', width:40, height:40, fontSize:20}}>✕</button><PDFDoc f={showPDF} op={user}/></div>}
       
-      <div style={{maxWidth:1100, margin:'0 auto'}}>
-        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', background:'white', padding:'12px 20px', borderRadius:16, marginBottom:16, boxShadow:'0 2px 8px rgba(0,0,0,0.05)'}}>
-          <div><h2 style={{margin:0, fontSize:18, fontWeight:900, color:B.purple}}>لوحة تحكم الإدارة</h2><p style={{margin:0, fontSize:12, color:'#64748b'}}>مرحباً، {user.username} ({isAdmin ? 'مدير نظام' : 'مستخدم'})</p></div>
+      <div style={{maxWidth:900, margin:'0 auto'}}>
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', background:'white', padding:'12px 20px', borderRadius:16, marginBottom:16}}>
+          <div><h2 style={{margin:0, fontSize:18, fontWeight:900, color:B.purple}}>لوحة تحكم الإدارة</h2><p style={{margin:0, fontSize:12, color:'#64748b'}}>مرحباً، {user.username}</p></div>
           <button onClick={onLogout} style={{padding:'6px 14px', background:'#fef2f2', color:'#dc2626', border:'none', borderRadius:8, fontSize:13, fontWeight:700}}>تسجيل خروج</button>
         </div>
         
-        <div style={{display:'flex', gap:8, marginBottom:16, overflowX:'auto', paddingBottom:5}}>
-          <button onClick={()=>setTab('submissions')} style={{whiteSpace:'nowrap', padding:'10px 20px', background:tab==='submissions'?B.purple:'white', color:tab==='submissions'?'white':'#64748b', border:'none', borderRadius:12, fontWeight:700}}>📋 الطلبات ({subs.length})</button>
-          {isAdmin && <button onClick={()=>setTab('users')} style={{whiteSpace:'nowrap', padding:'10px 20px', background:tab==='users'?B.purple:'white', color:tab==='users'?'white':'#64748b', border:'none', borderRadius:12, fontWeight:700}}>👥 المستخدمين</button>}
-          {isAdmin && <button onClick={()=>setTab('settings')} style={{whiteSpace:'nowrap', padding:'10px 20px', background:tab==='settings'?B.purple:'white', color:tab==='settings'?'white':'#64748b', border:'none', borderRadius:12, fontWeight:700}}>⚙️ إعدادات الحقول والتواريخ</button>}
-          {isAdmin && <button onClick={()=>setTab('lists')} style={{whiteSpace:'nowrap', padding:'10px 20px', background:tab==='lists'?B.purple:'white', color:tab==='lists'?'white':'#64748b', border:'none', borderRadius:12, fontWeight:700}}>🗂️ القوائم المنسدلة</button>}
-          {isAdmin && <button onClick={()=>setTab('mandatory')} style={{whiteSpace:'nowrap', padding:'10px 20px', background:tab==='mandatory'?B.purple:'white', color:tab==='mandatory'?'white':'#64748b', border:'none', borderRadius:12, fontWeight:700}}>✅ الحقول الإلزامية</button>}
-        </div>
-
-        <div style={{background:'white', borderRadius:20, padding:24, minHeight:500, boxShadow:'0 4px 15px rgba(0,0,0,0.03)'}}>
-          
-          {/* TAB: SUBMISSIONS */}
-          {tab==='submissions' && <div className="fade-in">
-            {subs.map(s => (
+        <div style={{background:'white', borderRadius:20, padding:24, minHeight:400}}>
+          <h3 style={{fontSize:16, fontWeight:800, color:B.purple, marginBottom:16}}>📋 الطلبات المقدمة ({subs.length})</h3>
+          {subs.length===0 ? <div style={{textAlign:'center', color:'#94a3b8', padding:40}}>لا توجد طلبات بعد</div> :
+            subs.map(s => (
               <div key={s.id} style={{border:'1px solid #e2e8f0', borderRadius:14, padding:16, background:'#fafafa', marginBottom:10}}>
                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
                   <div>
@@ -427,138 +426,20 @@ const AdminPanel = ({user, onLogout}) => {
                     <p style={{margin:'4px 0 0', fontSize:13, color:'#64748b'}}>{s.idType} ({s.idNumber}) | {s.mobile} | {s.branch}</p>
                     <p style={{margin:'4px 0 0', fontSize:12, color:'#16a34a', fontWeight:700}}>رقم المرجع: {s.id}</p>
                   </div>
-                  <div style={{display:'flex', gap:6}}>
-                    <button onClick={()=>printSub(s)} style={{padding:'8px 16px', background:'#dbeafe', color:'#1d4ed8', border:'none', borderRadius:10, fontSize:13, fontWeight:800}}>🖨 طباعة وتفاصيل</button>
-                    {isAdmin && <button onClick={()=>{if(confirm('تأكيد الحذف؟')){const n = subs.filter(x=>x.id!==s.id); DB.set('submissions',n); setSubs(n);}}} style={{padding:'8px 12px', background:'#fef2f2', color:'#dc2626', border:'none', borderRadius:10, fontSize:13, fontWeight:800}}>🗑</button>}
+                  <div>
+                    <button onClick={()=>printSub(s)} style={{padding:'8px 16px', background:'#dbeafe', color:'#1d4ed8', border:'none', borderRadius:10, fontSize:13, fontWeight:800}}>🖨 طباعة PDF</button>
                   </div>
                 </div>
               </div>
-            ))}
-            {subs.length===0 && <div style={{textAlign:'center', color:'#94a3b8', padding:60, fontSize:18, fontWeight:700}}>لا توجد طلبات حتى الآن</div>}
-          </div>}
-
-          {/* TAB: USERS (Admin Only) */}
-          {tab==='users' && isAdmin && <div className="fade-in">
-            <h3 style={{fontSize:18, fontWeight:800, color:B.purple, marginBottom:16}}>إدارة مستخدمي النظام</h3>
-            
-            <form onSubmit={addUser} style={{background:'#f8fafc', padding:16, borderRadius:14, border:'1px solid #e2e8f0', marginBottom:20, display:'grid', gridTemplateColumns:'1fr 1fr 1fr auto', gap:10, alignItems:'end'}}>
-                <Fld label="اسم المستخدم الجديد"><input name="u_name" style={inp()}/></Fld>
-                <Fld label="كلمة المرور"><input name="u_pass" style={inp()}/></Fld>
-                <Fld label="نوع الصلاحية"><select name="u_role" style={inp()}><option value="user">مستخدم (عرض وطباعة فقط)</option><option value="admin">مدير (صلاحيات كاملة)</option></select></Fld>
-                <button type="submit" style={{padding:'11px 20px', background:B.purple, color:'white', border:'none', borderRadius:10, fontWeight:800, marginBottom:10}}>إضافة مستخدم</button>
-            </form>
-
-            <div style={{border:'1px solid #e2e8f0', borderRadius:14, overflow:'hidden'}}>
-                <table style={{width:'100%', borderCollapse:'collapse', fontSize:14}}>
-                    <thead><tr style={{background:'#f1f5f9', color:'#475569'}}><th style={{padding:12, textAlign:'right'}}>المستخدم</th><th style={{padding:12, textAlign:'right'}}>الرقم السري</th><th style={{padding:12, textAlign:'right'}}>الصلاحية</th><th style={{padding:12}}>إجراء</th></tr></thead>
-                    <tbody>
-                        <tr style={{borderTop:'1px solid #e2e8f0'}}><td style={{padding:12, fontWeight:700}}>{adminData.username} (المدير الرئيسي)</td><td style={{padding:12}}>***</td><td style={{padding:12}}><span className="badge badge-green">مدير خارق</span></td><td style={{padding:12, textAlign:'center'}}>-</td></tr>
-                        {systemUsers.map(u => (
-                            <tr key={u.id} style={{borderTop:'1px solid #e2e8f0'}}><td style={{padding:12, fontWeight:700}}>{u.username}</td><td style={{padding:12}}>{u.password}</td><td style={{padding:12}}><span className={`badge ${u.role==='admin'?'badge-green':'badge-blue'}`}>{u.role==='admin'?'مدير':'مستخدم'}</span></td><td style={{padding:12, textAlign:'center'}}><button onClick={()=>deleteUser(u.id)} style={{background:'#fef2f2', color:'#dc2626', border:'none', padding:'4px 10px', borderRadius:6, fontWeight:700}}>حذف</button></td></tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-            
-            <div style={{marginTop:24, background:'#fffcf5', padding:16, borderRadius:14, border:'1px solid #fef08a'}}>
-              <h4 style={{fontSize:15, fontWeight:800, color:B.orange, marginBottom:10}}>تغيير بيانات المدير الرئيسي</h4>
-              <div style={{display:'flex', gap:10}}>
-                <input style={inp()} value={adminData.username} onChange={e=>setAdminData({...adminData, username:e.target.value})} placeholder="اسم المدير"/>
-                <input style={inp()} value={adminData.password} onChange={e=>setAdminData({...adminData, password:e.target.value})} placeholder="كلمة المرور"/>
-                <button onClick={saveAdmin} style={{padding:'0 20px', background:B.orange, color:'white', border:'none', borderRadius:10, fontWeight:800}}>حفظ</button>
-              </div>
-            </div>
-          </div>}
-
-          {/* TAB: SETTINGS & DATES (Admin Only) */}
-          {tab==='settings' && isAdmin && <div className="fade-in">
-            <h3 style={{fontSize:18, fontWeight:800, color:B.purple, marginBottom:16}}>الإعدادات الأساسية وفترات التواريخ</h3>
-            
-            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:20}}>
-                {/* General Settings */}
-                <div style={{background:'#f8fafc', padding:16, borderRadius:14, border:'1px solid #e2e8f0'}}>
-                    <h4 style={{fontSize:14, fontWeight:800, color:B.purple, marginBottom:12}}>إعدادات عامة</h4>
-                    <Fld label="رقم الواتساب لاستقبال الطلبات"><input style={{...inp(), direction:'ltr'}} value={settings.whatsappNumber} onChange={e=>updateSettings('whatsappNumber', e.target.value)}/></Fld>
-                    <Fld label="عدد حقول الأسماء الإجبارية للعميل"><select style={inp()} value={settings.nameFieldCount} onChange={e=>updateSettings('nameFieldCount', parseInt(e.target.value))}><option value="2">اسمان</option><option value="3">ثلاثة أسماء</option><option value="4">أربعة أسماء</option></select></Fld>
-                </div>
-
-                {/* Date Ranges */}
-                <div style={{background:'#f8fafc', padding:16, borderRadius:14, border:'1px solid #e2e8f0'}}>
-                    <h4 style={{fontSize:14, fontWeight:800, color:B.purple, marginBottom:12}}>فترات التواريخ (قوائم منسدلة)</h4>
-                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
-                        <Fld label="تاريخ الإصدار (أقدم عام)"><select style={inp()} value={settings.dateRanges.issueDate.min} onChange={e=>updateSettings('dateRanges', {...settings.dateRanges, issueDate:{...settings.dateRanges.issueDate, min:parseInt(e.target.value)}})}>{yearOptions.map(y=><option key={y} value={y}>{y}</option>)}</select></Fld>
-                        <Fld label="تاريخ الإصدار (أحدث عام)"><select style={inp()} value={settings.dateRanges.issueDate.max} onChange={e=>updateSettings('dateRanges', {...settings.dateRanges, issueDate:{...settings.dateRanges.issueDate, max:parseInt(e.target.value)}})}>{yearOptions.map(y=><option key={y} value={y}>{y}</option>)}</select></Fld>
-                        <Fld label="تاريخ الميلاد (أقدم عام)"><select style={inp()} value={settings.dateRanges.birthDate.min} onChange={e=>updateSettings('dateRanges', {...settings.dateRanges, birthDate:{...settings.dateRanges.birthDate, min:parseInt(e.target.value)}})}>{yearOptions.map(y=><option key={y} value={y}>{y}</option>)}</select></Fld>
-                        <Fld label="تاريخ الميلاد (أحدث عام)"><select style={inp()} value={settings.dateRanges.birthDate.max} onChange={e=>updateSettings('dateRanges', {...settings.dateRanges, birthDate:{...settings.dateRanges.birthDate, max:parseInt(e.target.value)}})}>{yearOptions.map(y=><option key={y} value={y}>{y}</option>)}</select></Fld>
-                    </div>
-                </div>
-            </div>
-
-            <h3 style={{fontSize:18, fontWeight:800, color:B.purple, marginBottom:16}}>قواعد أنواع الهويات (أرقام وسنوات)</h3>
-            <div style={{background:'#f8fafc', padding:16, borderRadius:14, border:'1px solid #e2e8f0'}}>
-                <table style={{width:'100%', borderCollapse:'collapse', fontSize:13, textAlign:'right'}}>
-                    <thead><tr style={{borderBottom:'2px solid #e2e8f0'}}><th style={{paddingBottom:10}}>نوع الهوية</th><th style={{paddingBottom:10}}>عدد الأرقام المطلوب</th><th style={{paddingBottom:10}}>سنوات الصلاحية</th></tr></thead>
-                    <tbody>
-                        {Object.keys(settings.idRules).map(type => (
-                            <tr key={type} style={{borderBottom:'1px solid #f1f5f9'}}>
-                                <td style={{padding:'10px 0', fontWeight:700}}>{type}</td>
-                                <td style={{padding:'10px 0'}}>
-                                    <select style={{...inp(), padding:'6px', width:'100px'}} value={settings.idRules[type].digits} onChange={e=>{const r={...settings.idRules}; r[type].digits=parseInt(e.target.value); updateSettings('idRules', r);}}>
-                                        {digitOptions.map(d=><option key={d} value={d}>{d} أرقام</option>)}
-                                    </select>
-                                </td>
-                                <td style={{padding:'10px 0'}}>
-                                    <select style={{...inp(), padding:'6px', width:'100px'}} value={settings.idRules[type].expiryYears} onChange={e=>{const r={...settings.idRules}; r[type].expiryYears=parseInt(e.target.value); updateSettings('idRules', r);}}>
-                                        {[2,5,6,10,15].map(y=><option key={y} value={y}>{y} سنوات</option>)}
-                                    </select>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-
-          </div>}
-
-          {/* TAB: LISTS (Admin Only) */}
-          {tab==='lists' && isAdmin && <div className="fade-in">
-            <h3 style={{fontSize:18, fontWeight:800, color:B.purple, marginBottom:16}}>إدارة القوائم المنسدلة (ديناميكي)</h3>
-            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20}}>
-                <div style={{gridColumn:'span 2'}}><ArrayEditor title="🌍 الدول المتاحة" listKey="countries" /></div>
-                <ArrayEditor title="📍 المحافظات اليمنية" listKey="yemenGovs" />
-                <ArrayEditor title="🏘️ المديريات اليمنية" listKey="yemenDistricts" />
-                <ArrayEditor title="🏡 المناطق / الشوارع" listKey="regions" />
-                <ArrayEditor title="🏢 الفروع المعتمدة" listKey="branches" />
-                <div style={{gridColumn:'span 2'}}><ArrayEditor title="⚖️ الأشكال القانونية للشركات" listKey="legalForms" /></div>
-            </div>
-          </div>}
-
-          {/* TAB: MANDATORY FIELDS (Admin Only) */}
-          {tab==='mandatory' && isAdmin && <div className="fade-in">
-            <h3 style={{fontSize:18, fontWeight:800, color:B.purple, marginBottom:16}}>التحكم في الحقول الإلزامية (نموذج العميل)</h3>
-            <div style={{background:'#f0fdf4', padding:16, borderRadius:14, border:'1px solid #bbf7d0', marginBottom:20}}>
-                <p style={{margin:0, fontSize:14, color:'#16a34a', fontWeight:700}}>الحقول المحددة باللون البنفسجي ستكون إلزامية على العميل، ولن يتمكن من إرسال الطلب دون تعبئتها.</p>
-            </div>
-            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:10}}>
-                {Object.entries(ALL_FIELDS).map(([key, label]) => {
-                    const isReq = (settings.requiredFields || []).includes(key);
-                    return (
-                        <div key={key} onClick={()=>toggleReq(key)} style={{padding:'14px', background:isReq?B.purple:'#f8fafc', color:isReq?'white':'#475569', border:`2px solid ${isReq?B.purple:'#e2e8f0'}`, borderRadius:12, cursor:'pointer', display:'flex', alignItems:'center', gap:10, fontWeight:700, fontSize:14, transition:'0.2s'}}>
-                            <div style={{width:20, height:20, borderRadius:6, border:`2px solid ${isReq?'white':'#cbd5e1'}`, display:'flex', alignItems:'center', justifyContent:'center'}}>{isReq && '✓'}</div>
-                            {label}
-                        </div>
-                    );
-                })}
-            </div>
-          </div>}
-
+            ))
+          }
         </div>
       </div>
     </div>
   );
 };
 
-// ============ CLIENT FORM (Dynamically Controlled) ============
+// ============ نموذج العميل ============
 const ClientForm = ({onBack}) => {
   const settings = DB.get('settings');
   const reqFields = settings.requiredFields || [];
@@ -591,7 +472,6 @@ const ClientForm = ({onBack}) => {
 
   const req = (field) => reqFields.includes(field);
 
-  // دالة التحقق لكل خطوة على حدة
   const validate = (checkStep) => {
     const e = {};
     if(checkStep === 1 && !fd.termsAccepted) e.terms = 'يجب الموافقة';
@@ -613,7 +493,7 @@ const ClientForm = ({onBack}) => {
     }
     if(checkStep === 4) { 
       if(req('country') && !fd.country) e.country = 'مطلوب';
-      if(fd.country === 'اليمن') {
+      if(fd.country && worldGeoData[fd.country]) {
           if(req('birthGov') && !fd.birthGov) e.birthGov = 'مطلوب';
       }
       if(req('address') && !fd.address) e.address = 'مطلوب';
@@ -648,37 +528,15 @@ const ClientForm = ({onBack}) => {
   };
 
   const submitForm = () => {
-    const findFirstErrorStep = (errors) => {
-        const fieldToStepMap = {
-            terms: 1, names: 2, nickname: 2, businessName: 2,
-            idType: 3, idNumber: 3, idIssueDate: 3, idIssuePlace: 3, birthDate: 3,
-            country: 4, birthGov: 4, address: 4, mobile: 4, branch: 4,
-            currencies: 5,
-            sampleSignatures: 6, mainSignature: 6,
-            photos: 7
-        };
-        for (const errorKey in errors) {
-            const baseKey = errorKey.split('_')[0];
-            if (fieldToStepMap[baseKey]) {
-                return fieldToStepMap[baseKey];
-            }
-        }
-        return null;
-    };
-
     const allErrors = {};
     for (let i = 1; i <= T; i++) {
-        const stepErrors = validate(i);
-        Object.assign(allErrors, stepErrors);
+        Object.assign(allErrors, validate(i));
     }
-
     if (Object.keys(allErrors).length > 0) {
-        const firstErrorStep = findFirstErrorStep(allErrors);
         setErrs(allErrors);
-        setToast({msg: `هناك حقول إلزامية ناقصة. يرجى مراجعة الخطوة ${firstErrorStep || ''}.`, type: 'error'});
+        setToast({msg:'هناك حقول إلزامية ناقصة. يرجى المراجعة.', type:'error'});
         return;
     }
-
     const fullName = [...fd.names, fd.nickname].filter(Boolean).join(' ');
     const subs = DB.get('submissions') || [];
     const count = subs.filter(s => s.id.startsWith(currentYear.toString())).length + 1;
@@ -690,15 +548,9 @@ const ClientForm = ({onBack}) => {
     setSubmitted(true);
   };
 
-  const sendWhatsApp = () => {
-    const text = encodeURIComponent(`انا العميل ${subData.fullName} قدمت طلب فتح حساب رقم ${subData.id}`);
-    window.open(`https://wa.me/${settings.whatsappNumber.replace('+','')}?text=${text}`, '_blank');
-  };
-
   const getPhotoConfig = () => {
     if(fd.idType.includes('شخصية')) return [{id:'front', label:'الوجه الأمامي'}, {id:'back', label:'الوجه الخلفي'}];
     if(fd.idType.includes('جواز')) return [{id:'passport', label:'صورة صفحة البيانات'}];
-    if(fd.idType.includes('عائلية')) return [{id:'page1', label:'الصفحة الأولى'}, {id:'page2', label:'الصفحة الثانية'}, {id:'page3', label:'الصفحة الثالثة'}];
     return [{id:'main', label:'صورة الهوية'}];
   };
 
@@ -719,44 +571,30 @@ const ClientForm = ({onBack}) => {
     <div style={{minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f1f5f9', padding:16}}>
       <div className="slide-up" style={{textAlign:'center', background:'white', padding:'40px 20px', borderRadius:24, boxShadow:'0 10px 30px rgba(0,0,0,0.1)', maxWidth:500, width:'100%'}}>
         <div style={{width:80, height:80, borderRadius:'50%', background:'#dcfce7', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px', fontSize:40}}>✅</div>
-        <h2 style={{color:B.purple, fontWeight:900, marginBottom:10}}>لقد قمت بكل الخطوات بنجاح!</h2>
-        <p style={{color:'#64748b', fontSize:15, lineHeight:1.8}}>الآن لقد تم رفع طلبك بنجاح وهو تحت المراجعة من قبل الإدارة المعتمدة.</p>
-        <div style={{background:'#fffcf5', border:`2px dashed ${B.orange}`, borderRadius:14, padding:20, margin:'20px 0'}}>
-          <p style={{margin:0, fontSize:14, color:'#475569', fontWeight:700}}>رقم طلبك المرجعي:</p>
-          <h1 style={{margin:0, fontSize:36, color:B.purple, letterSpacing:2}}>{subData.id}</h1>
-        </div>
-        <button onClick={sendWhatsApp} style={{width:'100%', padding:'16px', background:'#25D366', color:'white', border:'none', borderRadius:14, fontSize:16, fontWeight:900, marginBottom:12, display:'flex', alignItems:'center', justifyContent:'center', gap:10}}>
-          <i className="fab fa-whatsapp" style={{fontSize:22}}/> إرسال الطلب للإدارة
-        </button>
-        <button onClick={onBack} style={{background:'none', border:'none', color:'#94a3b8', fontSize:14, fontWeight:700, textDecoration:'underline'}}>العودة للرئيسية</button>
+        <h2 style={{color:B.purple, fontWeight:900, marginBottom:10}}>تم تقديم الطلب بنجاح!</h2>
+        <p style={{color:'#64748b', fontSize:15, lineHeight:1.8}}>رقم طلبك المرجعي: <strong>{subData.id}</strong></p>
+        <button onClick={onBack} style={{marginTop:20, padding:'12px 30px', background:B.purple, color:'white', border:'none', borderRadius:12, fontSize:14, fontWeight:800}}>العودة للرئيسية</button>
       </div>
     </div>
   );
 
-  const labels = ['الشروط القانونية','البيانات الأساسية','بيانات الهوية والتواريخ','العنوان والتواصل','العملات والخدمات','التفويض والتوقيعات','إرفاق الوثائق'];
+  const labels = ['الشروط','البيانات الأساسية','الهوية والتواريخ','العنوان والتواصل','العملات والخدمات','التوقيعات','إرفاق الوثائق'];
 
   return (
     <div style={{minHeight:'100vh', background:'#f1f5f9', padding:'16px 10px'}}>
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
       {activeSig !== null && <SignatureModal 
-          label={activeSig === 'main' ? 'التوقيع الرئيسي للإقرار' : `نموذج (${activeSig + 1})`} 
+          label={activeSig === 'main' ? 'التوقيع الرئيسي' : `نموذج ${activeSig + 1}`} 
           init={activeSig === 'main' ? fd.mainSignature : fd.sampleSignatures[activeSig]} 
           onSave={img => {
-              if (activeSig === 'main') {
-                  uf('mainSignature', img);
-              } else {
-                  const s = [...fd.sampleSignatures];
-                  s[activeSig] = img;
-                  uf('sampleSignatures', s);
-              }
+              if (activeSig === 'main') uf('mainSignature', img);
+              else { const s = [...fd.sampleSignatures]; s[activeSig] = img; uf('sampleSignatures', s); }
           }} 
           onClose={() => setActiveSig(null)}
       />}
 
       <div className="no-print" style={{maxWidth:700, margin:'0 auto'}}>
-        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14}}>
-          <button onClick={onBack} style={{padding:'8px 14px', background:'white', border:'1px solid #e2e8f0', borderRadius:10, fontSize:13, fontWeight:700, color:'#64748b'}}>↩ العودة</button>
-        </div>
+        <div style={{marginBottom:14}}><button onClick={onBack} style={{padding:'8px 14px', background:'white', border:'1px solid #e2e8f0', borderRadius:10, fontSize:13, fontWeight:700, color:'#64748b'}}>↩ العودة</button></div>
         <div style={{background:'white', borderRadius:24, boxShadow:'0 16px 48px rgba(128,42,93,0.1)', overflow:'hidden'}}>
           <div style={{padding:'20px 24px 16px', borderBottom:'1px solid #f1f5f9'}}>
             <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:12}}><img src={LOGO} style={{height:42}} alt=""/><div><p style={{margin:0, fontSize:11, fontWeight:800, color:B.orange}}>مرحلة {step} من {T}</p><h2 style={{margin:0, fontSize:18, fontWeight:900, color:B.purple}}>{labels[step-1]}</h2></div></div>
@@ -764,85 +602,46 @@ const ClientForm = ({onBack}) => {
           </div>
 
           <div style={{padding:'20px 24px', minHeight:400}}>
-            {/* STEP 1: TERMS */}
             {step===1 && <div className="fade-in">
-              <div style={{background:'#fffbeb', padding:'20px', borderRadius:16, borderRight:`5px solid ${B.orange}`, marginBottom:20, maxHeight:'350px', overflowY:'auto'}}>
-                <h3 style={{color:B.purple, fontWeight:900, marginBottom:14, fontSize:16}}>شروط فتح حساب بغرض التعاملات المالية</h3>
-                <ul style={{fontSize:14, lineHeight:1.8, color:'#334155', paddingRight:20}}>
-                  <li><strong>تعبئة الاستمارة:</strong> تعبئة استمارة (طلب فتح حساب) والتوقيع عليها مع إرفاق صورة البطاقة الشخصية بعد مطابقتها مع الأصل.</li>
-                  <li><strong>نماذج التوقيعات:</strong> التوقيع على كرت التوقيعات أمام الموظف المختص حصراً.</li>
-                  <li><strong>السجل التجاري:</strong> إرفاق السجل التجاري بالنسبة للوكلاء والعملاء (أفراد/شركات) ساري المفعول.</li>
-                  <li><strong>التفويض:</strong> التوقيع على استمارة التفويض الخاصة لمن سيدير الحسابات.</li>
-                  <li><strong>حسن التعامل:</strong> تعهد العميل بتجنب أي عمل أو تصرف يسيء إلى التعامل أو يضعف الثقة.</li>
-                  <li><strong>الغرض من الحساب:</strong> يتم فتح الحساب لغرض الإيداعات والتحويلات والمصارفة فقط.</li>
-                  <li><strong>الاستخدام المشروع:</strong> يُمنع استخدام الحساب لأي أغراض غير قانونية أو مخالفة.</li>
-                  <li><strong>مسؤولية المفوضين:</strong> يتحمل العميل كامل المسؤولية القانونية عن أي تعاملات تتم بواسطة المفوضين.</li>
-                  <li><strong>صلاحية الإغلاق:</strong> للمنشأة الحق في إغلاق الحساب في حالة عدم التزام العميل.</li>
-                  <li><strong>العنوان الرسمي:</strong> يعتبر العنوان المعطى هو الرسمي، والعميل مسؤول عن تغييره.</li>
-                  <li><strong>الإقرار:</strong> يقر طالب فتح الحساب بأن جميع البيانات الواردة صحيحة.</li>
-                </ul>
+              <div style={{background:'#fffbeb', padding:16, borderRadius:16, marginBottom:20, maxHeight:300, overflowY:'auto', fontSize:14}}>
+                <h3 style={{color:B.purple, fontWeight:900, marginBottom:10}}>شروط فتح الحساب</h3>
+                <ul><li>تعبئة الاستمارة والتوقيع عليها.</li><li>إرفاق صورة الهوية سارية المفعول.</li><li>التوقيع أمام الموظف المختص.</li><li>الالتزام بالشروط والأحكام.</li></ul>
               </div>
-              <label style={{display:'flex', alignItems:'center', gap:10, padding:14, background:fd.termsAccepted?'#f8f0f5':'white', border:`2px solid ${errs.terms?'#fca5a5':fd.termsAccepted?B.purple:'#e2e8f0'}`, borderRadius:14, cursor:'pointer', transition:'0.2s'}}>
+              <label style={{display:'flex', alignItems:'center', gap:10, padding:14, background:fd.termsAccepted?'#f8f0f5':'white', border:`2px solid ${errs.terms?'#fca5a5':fd.termsAccepted?B.purple:'#e2e8f0'}`, borderRadius:14, cursor:'pointer'}}>
                 <input type="checkbox" checked={fd.termsAccepted} onChange={e=>uf('termsAccepted',e.target.checked)} style={{width:20, height:20, accentColor:B.purple}}/>
-                <span style={{fontSize:15, fontWeight:800, color:fd.termsAccepted?B.purple:'#475569'}}>تم الاطلاع وأقر بالموافقة الكاملة</span>
+                <span style={{fontSize:15, fontWeight:800}}>أقر بالموافقة على الشروط</span>
               </label>
             </div>}
 
-            {/* STEP 2: NAMES & TYPE */}
             {step===2 && <div className="fade-in">
-              {req('accountType') && <div style={{display:'flex', background:'#f8fafc', padding:6, borderRadius:12, marginBottom:20}}>
-                {['شخصي', 'تجاري'].map(t => <button key={t} onClick={()=>uf('accountType', t)} style={{flex:1, padding:'10px', background:fd.accountType===t?B.purple:'transparent', color:fd.accountType===t?'white':'#64748b', border:'none', borderRadius:8, fontWeight:800, fontSize:14, transition:'0.3s'}}>{t}</button>)}
-              </div>}
-
               <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
-                <div style={{gridColumn:'span 2', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                  <h4 style={{fontSize:16, fontWeight:800, color:B.purple, margin:0}}>الاسم الشخصي للعميل</h4>
-                  <button type="button" onClick={addNameField} style={{background:'none', border:`1px dashed ${B.purple}`, color:B.purple, borderRadius:30, padding:'4px 14px', fontSize:13, fontWeight:700}}>+ إضافة اسم إضافي</button>
+                <div style={{gridColumn:'span 2', display:'flex', justifyContent:'space-between'}}>
+                  <h4 style={{fontSize:16, fontWeight:800, color:B.purple}}>الاسم الشخصي</h4>
+                  <button type="button" onClick={addNameField} style={{background:'none', border:`1px dashed ${B.purple}`, color:B.purple, borderRadius:30, padding:'4px 14px', fontSize:13, fontWeight:700}}>+ إضافة اسم</button>
                 </div>
                 {fd.names.map((n, i) => (
-                  <Fld key={i} label={`الاسم (${i+1})`} req={req('names') && i < settings.nameFieldCount} err={errs[`name_${i}`]}>
+                  <Fld key={i} label={`الاسم ${i+1}`} req={req('names') && i < settings.nameFieldCount} err={errs[`name_${i}`]}>
                     <input style={inp(errs[`name_${i}`])} value={n} onChange={e=>updateName(i, e.target.value)} placeholder={`الاسم ${i+1}`}/>
                   </Fld>
                 ))}
                 <Fld label="اللقب العائلي" req={req('nickname')} err={errs.nickname}><input style={inp(errs.nickname)} value={fd.nickname} onChange={e=>uf('nickname', e.target.value)} placeholder="اللقب"/></Fld>
               </div>
-
-              {fd.accountType === 'تجاري' && <div className="fade-in" style={{marginTop:20, paddingTop:20, borderTop:'2px dashed #e2e8f0'}}>
-                <h4 style={{fontSize:16, fontWeight:800, color:B.purple, margin:'0 0 12px'}}>بيانات النشاط التجاري</h4>
-                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
-                  <div style={{gridColumn:'span 2'}}><Fld label="الاسم التجاري" req={req('businessName')} err={errs.businessName}><input style={inp(errs.businessName)} value={fd.businessName} onChange={e=>uf('businessName', e.target.value)}/></Fld></div>
-                  <Fld label="نوع النشاط" req={req('businessType')} err={errs.businessType}><input style={inp(errs.businessType)} value={fd.businessType} onChange={e=>uf('businessType', e.target.value)}/></Fld>
-                  <Fld label="الشكل القانوني" req={req('legalForm')} err={errs.legalForm}><select style={inp(errs.legalForm)} value={fd.legalForm} onChange={e=>uf('legalForm', e.target.value)}><option value="">اختر</option>{settings.legalForms.map(l=><option key={l}>{l}</option>)}</select></Fld>
-                </div>
-              </div>}
             </div>}
 
-            {/* STEP 3: ID & DATES */}
             {step===3 && <div className="fade-in">
               <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
                 <Fld label="نوع الهوية" req={req('idType')}><select style={inp()} value={fd.idType} onChange={e=>{uf('idType',e.target.value); uf('idNumber',''); uf('idPhotos',{});}}>{Object.keys(settings.idRules).map(t=><option key={t}>{t}</option>)}</select></Fld>
-                <Fld label={`رقم الهوية (${idRule.digits} رقم)`} req={req('idNumber')} err={errs.idNumber} errMsg={errs.idNumber}><input style={{...inp(errs.idNumber), fontFamily:'monospace', fontWeight:700, letterSpacing:2}} value={fd.idNumber} onChange={e=>uf('idNumber', e.target.value.replace(/\D/g,'').slice(0,idRule.digits))} placeholder={'0'.repeat(idRule.digits)}/></Fld>
-                
-                <div style={{gridColumn:'span 2'}}>
-                  <Fld label="تاريخ الإصدار" req={req('idIssueDate')} err={errs.idIssueDate}>
-                    <DatePicker value={fd.idIssueDate} onChange={v=>uf('idIssueDate', v)} err={errs.idIssueDate} minY={settings.dateRanges.issueDate.min} maxY={settings.dateRanges.issueDate.max}/>
-                  </Fld>
-                </div>
-                <Fld label="تاريخ الانتهاء (تلقائي)"><div style={{...inp(), background:'#f0fdf4', color:'#16a34a', fontWeight:700, display:'flex', alignItems:'center'}}>{fd.idExpiry || '—'}</div></Fld>
-                <Fld label="مكان الإصدار" req={req('idIssuePlace')} err={errs.idIssuePlace}><select style={inp(errs.idIssuePlace)} value={fd.idIssuePlace} onChange={e=>uf('idIssuePlace', e.target.value)}><option value="">اختر</option>{settings.yemenGovs && settings.yemenGovs.map(p=><option key={p}>{p}</option>)}</select></Fld>
-                
-                <div style={{gridColumn:'span 2', marginTop:10, paddingTop:10, borderTop:'1px solid #f1f5f9'}}>
-                  <Fld label="تاريخ الميلاد" req={req('birthDate')} err={errs.birthDate} errMsg={errs.birthDate}>
-                    <DatePicker value={fd.birthDate} onChange={v=>uf('birthDate', v)} err={errs.birthDate} minY={settings.dateRanges.birthDate.min} maxY={settings.dateRanges.birthDate.max}/>
-                  </Fld>
-                </div>
+                <Fld label={`رقم الهوية (${idRule.digits} رقم)`} req={req('idNumber')} err={errs.idNumber}><input style={{...inp(errs.idNumber), fontFamily:'monospace', fontWeight:700}} value={fd.idNumber} onChange={e=>uf('idNumber', e.target.value.replace(/\D/g,'').slice(0,idRule.digits))} placeholder={'0'.repeat(idRule.digits)}/></Fld>
+                <div style={{gridColumn:'span 2'}}><Fld label="تاريخ الإصدار" req={req('idIssueDate')} err={errs.idIssueDate}><DatePicker value={fd.idIssueDate} onChange={v=>uf('idIssueDate', v)} err={errs.idIssueDate} minY={settings.dateRanges.issueDate.min} maxY={settings.dateRanges.issueDate.max}/></Fld></div>
+                <Fld label="تاريخ الانتهاء"><div style={{...inp(), background:'#f0fdf4'}}>{fd.idExpiry || '—'}</div></Fld>
+                <Fld label="مكان الإصدار" req={req('idIssuePlace')} err={errs.idIssuePlace}><select style={inp(errs.idIssuePlace)} value={fd.idIssuePlace} onChange={e=>uf('idIssuePlace', e.target.value)}><option value="">اختر</option>{Object.keys(worldGeoData['اليمن'] || {}).map(p=><option key={p}>{p}</option>)}</select></Fld>
+                <div style={{gridColumn:'span 2'}}><Fld label="تاريخ الميلاد" req={req('birthDate')} err={errs.birthDate}><DatePicker value={fd.birthDate} onChange={v=>uf('birthDate', v)} err={errs.birthDate} minY={settings.dateRanges.birthDate.min} maxY={settings.dateRanges.birthDate.max}/></Fld></div>
               </div>
             </div>}
 
-            {/* STEP 4: CONTACT & HIERARCHICAL ADDRESS */}
             {step===4 && <div className="fade-in">
               <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
-                <div style={{gridColumn:'span 2'}}><Fld label="الدولة" req={req('country')} err={errs.country}><select style={inp(errs.country)} value={fd.country} onChange={e=>{uf('country', e.target.value); uf('birthGov',''); uf('birthDistrict',''); uf('address','');}}><option value="">اختر الدولة</option>{settings.countries.map(c=><option key={c}>{c}</option>)}</select></Fld></div>
+                <div style={{gridColumn:'span 2'}}><Fld label="الدولة" req={req('country')}><select style={inp()} value={fd.country} onChange={e=>{uf('country', e.target.value); uf('birthGov',''); uf('birthDistrict',''); uf('address','');}}><option value="">اختر</option>{Object.keys(worldGeoData).map(c=><option key={c}>{c}</option>)}</select></Fld></div>
                 
                 {fd.country && worldGeoData[fd.country] ? (
                   <>
@@ -859,7 +658,7 @@ const ClientForm = ({onBack}) => {
                       </select>
                     </Fld>
                     <div style={{gridColumn:'span 2'}}>
-                      <Fld label="المنطقة / المدينة / الحي" req={req('address')} err={errs.address}>
+                      <Fld label="المنطقة / الحي" req={req('address')} err={errs.address}>
                         <select style={inp(errs.address)} value={fd.address} onChange={e => uf('address', e.target.value)} disabled={!fd.birthDistrict}>
                           <option value="">اختر</option>
                           {fd.birthGov && fd.birthDistrict && worldGeoData[fd.country][fd.birthGov][fd.birthDistrict] ? worldGeoData[fd.country][fd.birthGov][fd.birthDistrict].map(r => <option key={r} value={r}>{r}</option>) : null}
@@ -867,104 +666,69 @@ const ClientForm = ({onBack}) => {
                       </Fld>
                     </div>
                   </>
-                ) : ( fd.country &&
-                  <div style={{gridColumn:'span 2'}}>
-                    <Fld label="المدينة / المقاطعة / التفاصيل" req={req('address')} err={errs.address}>
-                      <input style={inp(errs.address)} value={fd.address} onChange={e => uf('address', e.target.value)} placeholder="أدخل تفاصيل العنوان كاملة"/>
-                    </Fld>
-                  </div>
+                ) : (
+                  <div style={{gridColumn:'span 2'}}><Fld label="العنوان التفصيلي" req={req('address')}><input style={inp()} value={fd.address} onChange={e=>uf('address', e.target.value)} placeholder="أدخل العنوان"/></Fld></div>
                 )}
                 
-                <div style={{gridColumn:'span 2', marginTop:10, paddingTop:10, borderTop:'1px solid #f1f5f9'}}>
-                  <Fld label="نوع رقم الجوال">
-                    <div style={{display:'flex', gap:10}}>
-                      <label style={{flex:1, padding:'10px', background:fd.mobileType==='yemeni'?B.light:'#f8fafc', border:`1px solid ${fd.mobileType==='yemeni'?B.purple:'#e2e8f0'}`, borderRadius:8, textAlign:'center', cursor:'pointer'}}><input type="radio" checked={fd.mobileType==='yemeni'} onChange={()=>uf('mobileType','yemeni')} style={{display:'none'}}/><span style={{fontSize:14, fontWeight:800, color:fd.mobileType==='yemeni'?B.purple:'#64748b'}}>يمني</span></label>
-                      <label style={{flex:1, padding:'10px', background:fd.mobileType==='intl'?B.light:'#f8fafc', border:`1px solid ${fd.mobileType==='intl'?B.purple:'#e2e8f0'}`, borderRadius:8, textAlign:'center', cursor:'pointer'}}><input type="radio" checked={fd.mobileType==='intl'} onChange={()=>uf('mobileType','intl')} style={{display:'none'}}/><span style={{fontSize:14, fontWeight:800, color:fd.mobileType==='intl'?B.purple:'#64748b'}}>دولي</span></label>
-                    </div>
-                  </Fld>
-                  <Fld label="رقم الجوال" req={req('mobile')} err={errs.mobile} errMsg={errs.mobile}>
+                <div style={{gridColumn:'span 2', marginTop:10}}>
+                  <Fld label="نوع الجوال"><div style={{display:'flex', gap:10}}>
+                    <label style={{flex:1, padding:10, background:fd.mobileType==='yemeni'?B.light:'#f8fafc', border:`1px solid ${fd.mobileType==='yemeni'?B.purple:'#e2e8f0'}`, borderRadius:8, textAlign:'center', cursor:'pointer'}}><input type="radio" checked={fd.mobileType==='yemeni'} onChange={()=>uf('mobileType','yemeni')} style={{display:'none'}}/> يمني</label>
+                    <label style={{flex:1, padding:10, background:fd.mobileType==='intl'?B.light:'#f8fafc', border:`1px solid ${fd.mobileType==='intl'?B.purple:'#e2e8f0'}`, borderRadius:8, textAlign:'center', cursor:'pointer'}}><input type="radio" checked={fd.mobileType==='intl'} onChange={()=>uf('mobileType','intl')} style={{display:'none'}}/> دولي</label>
+                  </div></Fld>
+                  <Fld label="رقم الجوال" req={req('mobile')} err={errs.mobile}>
                     <div style={{display:'flex', direction:'ltr', gap:5}}>
-                      {fd.mobileType === 'yemeni' ? (
-                        <div style={{padding:'11px 16px', background:'#e2e8f0', borderRadius:'12px 0 0 12px', fontWeight:800, color:'#334155'}}>+967</div>
-                      ) : (
-                        <select style={{...inp(), width:'120px', borderRadius:'12px 0 0 12px'}} value={fd.countryCode} onChange={e=>uf('countryCode', e.target.value)}>
-                          {Object.entries(worldGeoData).flatMap(([country, regions]) => 
-                              Object.keys(regions).map(region => ({name: country, code: `+${region}`}))
-                          ).map(c => <option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}
+                      {fd.mobileType === 'yemeni' ? <div style={{padding:'11px 16px', background:'#e2e8f0', borderRadius:'12px 0 0 12px'}}>+967</div> :
+                        <select style={{...inp(), width:120, borderRadius:'12px 0 0 12px'}} value={fd.countryCode} onChange={e=>uf('countryCode', e.target.value)}>
+                          {countryCodes.map(c => <option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}
                         </select>
-                      )}
-                      <input style={{...inp(errs.mobile), borderRadius:fd.mobileType==='yemeni'?'0 12px 12px 0':'0 12px 12px 0', letterSpacing:2, fontWeight:700, flex:1}} value={fd.mobile} onChange={e=>uf('mobile', e.target.value.replace(/[^\d]/g,''))} placeholder={fd.mobileType==='yemeni' ? "77xxxxxxxx" : "رقم الجوال"}/>
+                      }
+                      <input style={{...inp(errs.mobile), borderRadius:'0 12px 12px 0', flex:1}} value={fd.mobile} onChange={e=>uf('mobile', e.target.value.replace(/[^\d]/g,''))} placeholder="رقم الجوال"/>
                     </div>
                   </Fld>
                 </div>
-                
-                <Fld label="رقم الهاتف الثابت" req={req('phone')} err={errs.phone}><input style={inp(errs.phone)} value={fd.phone} onChange={e=>uf('phone', e.target.value)}/></Fld>
-                <Fld label="البريد الإلكتروني" req={req('email')} err={errs.email}><input style={inp(errs.email)} value={fd.email} onChange={e=>uf('email', e.target.value)}/></Fld>
-                <div style={{gridColumn:'span 2'}}><Fld label="الفرع المعتمد لفتح الحساب" req={req('branch')} err={errs.branch}><select style={inp(errs.branch)} value={fd.branch} onChange={e=>uf('branch', e.target.value)}><option value="">اختر الفرع</option>{settings.branches.map(b=><option key={b}>{b}</option>)}</select></Fld></div>
+                <Fld label="الهاتف الثابت"><input style={inp()} value={fd.phone} onChange={e=>uf('phone', e.target.value)}/></Fld>
+                <Fld label="البريد الإلكتروني"><input style={inp()} value={fd.email} onChange={e=>uf('email', e.target.value)}/></Fld>
+                <div style={{gridColumn:'span 2'}}><Fld label="الفرع" req={req('branch')}><select style={inp()} value={fd.branch} onChange={e=>uf('branch', e.target.value)}><option value="">اختر</option>{settings.branches.map(b=><option key={b}>{b}</option>)}</select></Fld></div>
               </div>
             </div>}
 
-            {/* STEP 5: SERVICES */}
             {step===5 && <div className="fade-in">
-              <Fld label="العملات المطلوبة" req={req('currencies')} err={errs.currencies}><div style={{display:'flex', flexWrap:'wrap', gap:8, marginTop:8}}>{settings.currencies.map(c=><button key={c} onClick={()=>{const n = fd.currencies.includes(c) ? fd.currencies.filter(x=>x!==c) : [...fd.currencies, c]; uf('currencies', n);}} style={chip(fd.currencies.includes(c))}>{c}</button>)}</div></Fld>
+              <Fld label="العملات المطلوبة" req={req('currencies')}><div style={{display:'flex', flexWrap:'wrap', gap:8}}>{settings.currencies.map(c=><button key={c} onClick={()=>{const n = fd.currencies.includes(c) ? fd.currencies.filter(x=>x!==c) : [...fd.currencies, c]; uf('currencies', n);}} style={chip(fd.currencies.includes(c))}>{c}</button>)}</div></Fld>
               <div style={{height:20}}/>
-              <Fld label="وسائل تقديم الخدمة" req={req('services')} err={errs.services}><div style={{display:'flex', flexWrap:'wrap', gap:8, marginTop:8}}>{settings.services.map(s=><button key={s} onClick={()=>{const n = fd.services.includes(s) ? fd.services.filter(x=>x!==s) : [...fd.services, s]; uf('services', n);}} style={chip(fd.services.includes(s))}>{s}</button>)}</div></Fld>
+              <Fld label="وسائل الخدمة"><div style={{display:'flex', flexWrap:'wrap', gap:8}}>{settings.services.map(s=><button key={s} onClick={()=>{const n = fd.services.includes(s) ? fd.services.filter(x=>x!==s) : [...fd.services, s]; uf('services', n);}} style={chip(fd.services.includes(s))}>{s}</button>)}</div></Fld>
             </div>}
 
-            {/* STEP 6: SIGNATURES */}
-            {step === 6 && <div className="fade-in">
-              <div style={{ marginBottom: 20 }}>
-                <h4 style={{ fontSize: 16, fontWeight: 800, color: B.purple, marginBottom: 10 }}>
-                  نماذج التوقيعات الفرعية <span style={{ color: '#dc2626', fontSize: 14 }}>*</span>
-                </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                  {[0, 1, 2].map(i => <SigBox key={i} id={i} label={`نموذج ${i + 1}`} val={fd.sampleSignatures[i]} />)}
+            {step===6 && <div className="fade-in">
+              <div style={{marginBottom:20}}>
+                <h4 style={{fontSize:16, fontWeight:800, color:B.purple, marginBottom:10}}>نماذج التوقيعات الفرعية <span style={{color:'#dc2626'}}>*</span></h4>
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8}}>
+                  {[0,1,2].map(i => <SigBox key={i} id={i} label={`نموذج ${i+1}`} val={fd.sampleSignatures[i]}/>)}
                 </div>
-                {errs.sampleSignatures && <p style={{ color: '#dc2626', fontSize: 13, fontWeight: 700, marginTop: 8, textAlign: 'center' }}>⚠ {errs.sampleSignatures}</p>}
+                {errs.sampleSignatures && <p style={{color:'#dc2626', fontSize:13, marginTop:8}}>⚠ {errs.sampleSignatures}</p>}
               </div>
-
-              <h4 style={{ fontSize: 16, fontWeight: 900, color: B.purple, marginBottom: 10 }}>
-                التوقيع الرئيسي للإقرار <span style={{ color: '#dc2626' }}>*</span>
-              </h4>
-              <SigBox id="main" label="اضغط هنا لاعتماد الطلب والتوقيع" val={fd.mainSignature} />
-              {errs.mainSignature && <p style={{ color: '#dc2626', fontSize: 13, fontWeight: 700, marginTop: 8, textAlign: 'center' }}>⚠ {errs.mainSignature}</p>}
+              <h4 style={{fontSize:16, fontWeight:900, color:B.purple, marginBottom:10}}>التوقيع الرئيسي <span style={{color:'#dc2626'}}>*</span></h4>
+              <SigBox id="main" label="اضغط للتوقيع" val={fd.mainSignature}/>
+              {errs.mainSignature && <p style={{color:'#dc2626', fontSize:13, marginTop:8}}>⚠ {errs.mainSignature}</p>}
             </div>}
 
-            {/* STEP 7: SMART ID UPLOAD */}
             {step===7 && <div className="fade-in">
-              <h4 style={{fontSize:16, fontWeight:800, color:B.purple, marginBottom:16}}>المرفقات الرسمية المطلوبة ({fd.idType})</h4>
-              <div style={{display:'grid', gridTemplateColumns: getPhotoConfig().length > 1 ? '1fr 1fr' : '1fr', gap:10, marginBottom:20}}>
+              <h4 style={{fontSize:16, fontWeight:800, color:B.purple, marginBottom:16}}>المرفقات ({fd.idType})</h4>
+              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
                 {getPhotoConfig().map(conf => (
-                  <div key={conf.id} style={{border:`2px dashed ${fd.idPhotos[conf.id] ? '#16a34a' : '#cbd5e1'}`, borderRadius:16, padding:14, textAlign:'center', background:fd.idPhotos[conf.id]?'#f0fdf4':'#f8fafc'}}>
-                    {fd.idPhotos[conf.id] ? (
-                      <><img src={fd.idPhotos[conf.id]} style={{width:'100%', height:120, objectFit:'contain', borderRadius:8, marginBottom:8}} alt=""/><button onClick={()=>{const n={...fd.idPhotos}; delete n[conf.id]; uf('idPhotos', n);}} style={{padding:'6px 14px', background:'#fef2f2', color:'#dc2626', border:'none', borderRadius:8, fontSize:12, fontWeight:800}}>🗑 إزالة المرفق</button></>
-                    ) : (
-                      <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:10}}><i className="fas fa-id-card" style={{fontSize:32, color:'#94a3b8'}}/><span style={{fontSize:13, fontWeight:800, color:'#334155'}}>{conf.label}</span><div style={{display:'flex', gap:6, width:'100%'}}><label style={{flex:1, padding:'10px', background:B.purple, color:'white', borderRadius:8, fontSize:11, fontWeight:800, cursor:'pointer'}}><i className="fas fa-camera"/> التقاط<input type="file" accept="image/*" capture="environment" onChange={e=>handlePhoto(conf.id, e.target.files[0])} style={{display:'none'}}/></label><label style={{flex:1, padding:'10px', background:B.orange, color:'white', borderRadius:8, fontSize:11, fontWeight:800, cursor:'pointer'}}><i className="fas fa-folder-open"/> رفع<input type="file" accept="image/*" onChange={e=>handlePhoto(conf.id, e.target.files[0])} style={{display:'none'}}/></label></div></div>
-                    )}
+                  <div key={conf.id} style={{border:`2px dashed ${fd.idPhotos[conf.id]?'#16a34a':'#cbd5e1'}`, borderRadius:16, padding:14, textAlign:'center'}}>
+                    {fd.idPhotos[conf.id] ? <><img src={fd.idPhotos[conf.id]} style={{width:'100%', height:120, objectFit:'contain'}} alt=""/><button onClick={()=>{const n={...fd.idPhotos}; delete n[conf.id]; uf('idPhotos', n);}} style={{marginTop:8, padding:'6px 14px', background:'#fef2f2', color:'#dc2626', border:'none', borderRadius:8}}>إزالة</button></> :
+                      <div><i className="fas fa-id-card" style={{fontSize:32, color:'#94a3b8'}}/><p>{conf.label}</p><label style={{padding:'8px 16px', background:B.purple, color:'white', borderRadius:8, cursor:'pointer'}}>رفع<input type="file" accept="image/*" onChange={e=>handlePhoto(conf.id, e.target.files[0])} style={{display:'none'}}/></label></div>
+                    }
                   </div>
                 ))}
               </div>
-              {errs.photos && <div style={{padding:10, background:'#fef2f2', color:'#dc2626', borderRadius:10, fontSize:13, fontWeight:700, textAlign:'center', marginBottom:16}}>⚠ {errs.photos}</div>}
-              
-              <div style={{background:'#f0fdf4', border:'2px solid #bbf7d0', borderRadius:14, padding:16, textAlign:'center'}}>
-                <h4 style={{fontSize:15, fontWeight:900, color:'#16a34a', margin:'0 0 10px'}}>الخطوة الأخيرة</h4>
-                <button 
-                  onClick={submitForm} 
-                  style={{
-                    width:'100%', padding:16, background: '#16a34a', color:'white', 
-                    border:'none', borderRadius:12, fontSize:17, fontWeight:900, 
-                    boxShadow:'0 8px 20px rgba(22,163,74,0.3)'
-                  }}>
-                  مراجعة وتأكيد الطلب 🚀
-                </button>
-              </div>
+              {errs.photos && <p style={{color:'#dc2626', marginTop:10}}>⚠ {errs.photos}</p>}
+              <button onClick={submitForm} style={{width:'100%', marginTop:20, padding:16, background:'#16a34a', color:'white', border:'none', borderRadius:12, fontSize:17, fontWeight:900}}>🚀 تأكيد الطلب</button>
             </div>}
-            
           </div>
 
-          {/* Nav Buttons */}
           {step < T && <div style={{padding:'12px 24px 20px', display:'flex', gap:10}}>
-            {step > 1 && <button onClick={()=>setStep(s=>s-1)} style={{padding:'12px 16px', background:'#f1f5f9', color:'#64748b', border:'none', borderRadius:12, fontSize:14, fontWeight:700}}>→ السابق</button>}
+            {step > 1 && <button onClick={()=>setStep(s=>s-1)} style={{padding:'12px 16px', background:'#f1f5f9', color:'#64748b', border:'none', borderRadius:12}}>→ السابق</button>}
             <button onClick={nx} style={{flex:1, padding:14, background:B.purple, color:'white', border:'none', borderRadius:12, fontSize:15, fontWeight:900}}>{step===6 ? 'مراجعة المرفقات ←' : 'التالي ←'}</button>
           </div>}
         </div>
@@ -973,36 +737,22 @@ const ClientForm = ({onBack}) => {
   );
 };
 
-// ============ PDF DOC ============
+// ============ مكون PDF (مختصر) ============
 const PDFDoc = ({f, op}) => {
-  const td = f.submittedAt || today(); const rn = f.id || Math.random().toString(36).substring(2).toUpperCase(); const s = DB.get('settings');
-  const WM = () => <div className="watermark-container"><img src={LOGO} alt="Watermark" className="watermark-img" /></div>;
-  const Chk = ({on}) => <span className="box">{on ? '✓' : ''}</span>;
-  const DM = () => <div className="designer-mark">Eslam Saeed</div>;
-  const FT = ({pg}) => <div className="footer-small"><div>ابن قايد المريسي للصرافة والتحويلات</div>{pg === 4 && <div>رقم النموذج: F-03-ACC</div>}<div>صفحة {pg} من 5</div></div>;
-
+  const WM = () => <div className="watermark-container"><img src={LOGO} alt="" className="watermark-img"/></div>;
   return (
-    <div id="pdf-output" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#444', padding: '20px', gap: '20px'}}>
-      
-      {/* Cover */}
-      <div className="page-a4"><WM /><div className="content-wrapper" style={{padding: '10mm 15mm 5mm 15mm'}}><div className="cover-header"><div className="logo-container"><img src={LOGO} alt="شعار" className="logo-img" /></div><h1 className="company-title">ابن قايد المريسي للصرافة والتحويلات</h1><div className="company-subtitle">Ibn Qaid Al-Marisi Exchange</div></div><div className="file-label-box"><div className="file-label">ملف حساب عميل {f.accountType === 'تجاري' ? '(تجاري)' : ''}</div></div><div className="cover-fields"><div className="field-row"><div className="field-label"><i className="fas fa-map-marker-alt" /> الفرع:</div><div className="input-display">{f.branch || '—'}</div></div><div className="field-row"><div className="field-label"><i className="fas fa-user-tie" /> اسم العميل:</div><div className="input-display">{f.fullName || '—'}</div></div><div className="field-row"><div className="field-label"><i className="fas fa-wallet" /> رقم الحساب:</div><div className="input-display account-input"></div></div></div><div className="cover-footer"><div className="contact-grid">{['778999567','775122022','773308998','778419081'].map(ph => <div key={ph} className="contact-pill"><i className="fas fa-phone-alt" /> {ph}</div>)}</div><div className="address-bar">المركز الرئيسي: الضالع - مريس - الجبارة | فرع قعطبة</div></div></div><DM /></div>
-
-      {/* Terms */}
-      <div className="page-a4"><WM /><div className="content-wrapper" style={{padding: '15mm 20mm'}}><div className="title-box"><div className="main-title">شروط فتح حساب بغرض التعاملات المالية</div><div className="subtitle">بموجب الموافقة المبدئية من إدارة المنشأة على فتح حساب بغرض التحويل وصرافة العملات، فإنه لاستكمال فتح الحساب يجب استيفاء الشروط التالية:</div></div><ul className="terms-list"><li><strong>تعبئة الاستمارة:</strong> تعبئة استمارة (طلب فتح حساب) والتوقيع عليها مع إرفاق صورة البطاقة الشخصية بعد مطابقتها مع الأصل.</li><li><strong>نماذج التوقيعات:</strong> التوقيع على كرت التوقيعات أمام الموظف المختص حصراً.</li><li><strong>السجل التجاري:</strong> إرفاق السجل التجاري بالنسبة للوكلاء والعملاء (سواء كانوا أفراداً أو شركات) وبعد مطابقة الصورة مع الأصل وعلى أن يكون ساري المفعول.</li><li><strong>التفويض:</strong> التوقيع على استمارة التفويض الخاصة لمن سيدير الحسابات أو مندوبين تتم بواسطتهم التعاملات المالية.</li><li><strong>حسن التعامل:</strong> تعهد العميل بتجنب أي عمل أو تصرف يسيء إلى التعامل أو يضعف الثقة بينه وبين المنشأة.</li><li><strong>الغرض من الحساب:</strong> يتم فتح الحساب لغرض الإيداعات والتحويلات وعملية المصارفة فقط.</li><li><strong>الاستخدام المشروع:</strong> يُمنع استخدام الحساب لأي أغراض غير قانونية أو مخالفة للأنظمة المالية المعتمدة.</li><li><strong>مسؤولية المفوضين:</strong> يتحمل العميل كامل المسؤولية القانونية عن أي تعاملات تتم بواسطة الأشخاص المفوضين المدرجين في استمارة التفويض.</li><li><strong>صلاحية الإغلاق:</strong> للمنشأة الحق في إغلاق الحساب وعدم قبول أي إيداع أو تحويل في حالة أن العميل لم يلتزم بما هو متفق عليه أو تجاوز حسابه العمليات الحسابية المعتادة.</li><li><strong>العنوان الرسمي:</strong> يعتبر العنوان الذي تعطونه في بياناتكم هو العنوان الرسمي لكم، وتتحملون مسؤولية تغييره دون إخطار خطي بذلك.</li><li><strong>الإقرار بصحة البيانات:</strong> يقر طالب فتح الحساب بأن جميع البيانات الواردة في استمارة فتح الحساب صحيحة.</li></ul><div className="declaration-section"><div className="declaration-text">تم الاطلاع على الشروط أعلاه والموافقة عليها</div><div className="signature-row"><div className="sig-block"><span className="sig-label">اسم العميل:</span><div className="sig-input">{f.fullName}</div></div><div className="sig-block" style={{textAlign: 'left'}}><span className="sig-label">التوقيع:</span><div className="sig-input" style={{justifyContent: 'center'}}>{f.mainSignature && <img src={f.mainSignature} style={{height: 28}} alt="Signature" />}</div></div></div></div><FT pg={2} /></div><DM /></div>
-
-      {/* Client Data */}
-      <div className="page-a4"><WM /><div className="content-wrapper page-3-wrapper"><div className="page-header"><div className="header-title">استمارة طلب فتح حساب (بيانات العميل)</div><div className="header-meta"><div className="meta-field">رقم الطلب: {rn}</div><div className="meta-field">تاريخ الطلب: {td}</div></div></div><div className="section-container"><div className="section-label"><i className="fas fa-user-circle" /> 1. البيانات الأساسية للعميل / المنشأة</div><div className="fields-grid"><div className="field-group" style={{gridColumn: 'span 8'}}><span className="label">الاسم الكامل:</span><div className="input">{f.fullName}</div></div><div className="field-group" style={{gridColumn: 'span 4'}}><span className="label">اللقب:</span><div className="input">{f.nickname || '—'}</div></div><div className="field-group" style={{gridColumn: 'span 6'}}><span className="label">الاسم التجاري:</span><div className="input">{f.businessName || '—'}</div></div><div className="field-group" style={{gridColumn: 'span 3'}}><span className="label">نوع النشاط:</span><div className="input">{f.businessType || '—'}</div></div><div className="field-group" style={{gridColumn: 'span 3'}}><span className="label">الشكل القانوني:</span><div className="input">{f.legalForm || '—'}</div></div><div className="field-group" style={{gridColumn: 'span 3'}}><span className="label">نوع الهوية:</span><div className="input">{f.idType}</div></div><div className="field-group" style={{gridColumn: 'span 3'}}><span className="label">رقم الهوية:</span><div className="input" style={{fontFamily: 'monospace', fontWeight: 700}}>{f.idNumber}</div></div><div className="field-group" style={{gridColumn: 'span 3'}}><span className="label">تاريخ الإصدار:</span><div className="input">{f.idIssueDate}</div></div><div className="field-group" style={{gridColumn: 'span 3'}}><span className="label">مكان الإصدار:</span><div className="input">{f.idIssuePlace || '—'}</div></div><div className="field-group" style={{gridColumn: 'span 3'}}><span className="label">تاريخ الانتهاء:</span><div className="input">{f.idExpiry}</div></div><div className="field-group" style={{gridColumn: 'span 9'}}><span className="label">الجنسية / تاريخ الميلاد:</span><div className="input">{f.country || 'يمني'} | {f.birthDate || '—'}</div></div></div></div><div className="section-container"><div className="section-label"><i className="fas fa-map-marker-alt" /> 2. العنوان وبيانات الاتصال</div><div className="fields-grid"><div className="field-group" style={{gridColumn: 'span 12'}}><span className="label">العنوان التفصيلي:</span><div className="input">{[f.country, f.birthGov, f.birthDistrict, f.address].filter(Boolean).join(' - ')}</div></div><div className="field-group" style={{gridColumn: 'span 3'}}><span className="label">رقم الجوال:</span><div className="input" style={{direction:'ltr'}}>{f.mobile}</div></div><div className="field-group" style={{gridColumn: 'span 3'}}><span className="label">رقم الهاتف:</span><div className="input">{f.phone || '—'}</div></div><div className="field-group" style={{gridColumn: 'span 6'}}><span className="label">البريد الإلكتروني:</span><div className="input">{f.email || '—'}</div></div></div></div><div className="compact-row"><div className="section-container"><div className="section-label"><i className="fas fa-coins" /> 3. عملات الحساب</div><div className="checkbox-row">{s?.currencies?.map(c => <div key={c} className="checkbox-item"><Chk on={f.currencies?.includes(c)} /> {c}</div>)}</div></div><div className="section-container"><div className="section-label"><i className="fas fa-headset" /> 4. وسائل طلب الخدمة</div><div className="checkbox-row">{s?.services?.map(sv => <div key={sv} className="checkbox-item"><Chk on={f.services?.includes(sv)} /> {sv}</div>)}</div></div></div><div className="signatures-container-p3"><div className="section-label"><i className="fas fa-signature" /> 5. نماذج توقيعات العميل المعتمدة</div><div className="sig-grid">{[0, 1, 2].map(i => <div key={i} className="page-3-sig-card"><div className="sig-card-header">توقيع معتمد ({i + 1})</div>{f.sampleSignatures?.[i] && <img src={f.sampleSignatures[i]} style={{maxHeight: 120, maxWidth: '90%'}} alt="" />}</div>)}</div><FT pg={3} /></div></div><DM /></div>
-
-      {/* Authorized */}
-      <div className="page-a4"><WM /><div className="content-wrapper" style={{padding: '10mm 15mm', gap: '20px', justifyContent: 'space-between'}}><div className="page-header"><div className="header-title">استمارة طلب فتح حساب (المفوضين والموافقات)</div></div><div><div className="section-label"><i className="fas fa-users-cog" /> 6. بيانات الأشخاص المفوضين والصلاحيات الممنوحة</div><div className="auth-table-container"><table className="auth-table"><thead><tr><th width="30%">بيانات المفوض</th><th width="45%">الصلاحيات المحددة</th><th width="25%">نموذج التوقيع</th></tr></thead><tbody>{[0, 1].map(i => {const a = f.authorized?.[i] || {}; const perms = ['السحب النقدي / إرسال الحوالات','الاطلاع على الرصيد','طلب كشف حساب','التحويل لأشخاص آخرين','التواصل لإرسال/طلب حوالات','كافة الصلاحيات']; return (<tr key={i}><td><div style={{marginBottom: 8}}><strong>الاسم:</strong> {a.name || '....................................'}</div><div style={{marginBottom: 8}}><strong>رقم الهوية:</strong> {a.id || '..............................'}</div><div style={{marginBottom: 8}}><strong>الهاتف:</strong> {a.phone || '....................................'}</div></td><td><div className="permission-grid">{perms.map(p => <div key={p} className="perm-item"><Chk on={a.permissions?.includes(p)} /> {p.substring(0,20)}</div>)}</div></td><td style={{verticalAlign: 'middle', textAlign: 'center'}}><div style={{height: 100, border: '1px dashed #999', marginTop: 5, background: '#fdfdfd', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>{a.signature && <img src={a.signature} style={{maxHeight: 90, maxWidth: '90%'}} alt="" />}</div></td></tr>);})}</tbody></table></div><div className="legal-note"><i className="fas fa-exclamation-triangle" /> يتحمل صاحب الحساب المسؤولية القانونية الكاملة عن تعاملات المفوضين.</div></div><div className="approval-section"><div className="section-label"><i className="fas fa-file-signature" /> 7. إقرار وموافقة العميل (صاحب الحساب)</div><div className="approval-text">أقر أنا الموقع أدناه بصحة كافة البيانات الواردة في هذا الطلب، وأوافق على تفويض الأشخاص المذكورين، كما أقر باطلاعي وموافقتي على الشروط والأحكام العامة لفتح الحساب والالتزام بها.</div><div style={{borderTop: '1px solid #ddd', margin: '10px 0'}} /><div className="approval-grid"><div className="field-line"><span className="lbl">الاسم الكامل (الرباعي):</span><div className="line">{f.fullName}</div></div><div className="field-line"><span className="lbl">التوقيع المعتمد:</span><div className="line" style={{justifyContent: 'center'}}>{f.mainSignature && <img src={f.mainSignature} style={{height: 28}} alt="" />}</div></div><div className="field-line"><span className="lbl">التاريخ:</span><div className="line">{td}</div></div></div></div><div className="employee-auth"><div style={{fontSize: 12, fontWeight: 700, width: '50%'}}><i className="fas fa-user-check" /> مصادقة الموظف المختص:<div style={{fontWeight: 400, marginTop: 5, fontSize: 11}}>تم التوقيع أمامي والمطابقة مع أصل الهوية.</div></div><div style={{display: 'flex', gap: 20, width: '45%'}}><div className="field-line"><span className="lbl">اسم الموظف:</span><div className="line">{op?.username || op?.email}</div></div><div className="field-line"><span className="lbl">التوقيع:</span><div className="line" style={{height: 40}}></div></div></div></div><div className="admin-decision"><div className="admin-title">قرار الإدارة (للاستخدام الرسمي فقط)</div><div className="admin-grid"><div className="field-line" style={{textAlign: 'center'}}><div className="line"></div><span className="lbl" style={{color: 'var(--brand-purple)'}}>مدير الفرع</span></div><div className="stamp-box">ختم المنشأة<br />(الرسمي)</div><div className="field-line" style={{textAlign: 'center'}}><div className="line"></div><span className="lbl" style={{color: 'var(--brand-purple)'}}>اعتماد المدير العام</span><div className="line" style={{marginTop: 10, width: 100, marginRight: 'auto', marginLeft: 'auto'}}></div><span className="lbl" style={{fontSize: 9}}>التاريخ</span></div></div></div><FT pg={4} /></div><DM /></div>
-
-      {/* ID Attachments */}
-      <div className="page-a4"><div className="content-wrapper" style={{padding: '10mm 15mm'}}><div className="page-header" style={{borderBottom: '3px solid var(--brand-orange)'}}><div className="header-title" style={{color: 'var(--brand-orange)'}}>المرفقات الرسمية (صورة الهوية)</div><div className="header-meta"><div className="meta-field" style={{background: '#f9f9f9', border: '1px solid #ccc'}}>رقم الهوية: {f.idNumber || '—'}</div></div></div><div style={{flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', border: '2px dashed #cbd5e1', borderRadius: '16px', padding: '20px', gap:'20px'}}>{f.idPhotos && Object.values(f.idPhotos).length > 0 ? (Object.values(f.idPhotos).map((photo, i) => (<img key={i} src={photo} style={{maxWidth: '100%', maxHeight: Object.values(f.idPhotos).length > 1 ? '110mm' : '230mm', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}} alt={`مرفق ${i+1}`} />))) : (<div style={{color: '#94a3b8', textAlign: 'center'}}><i className="fas fa-id-card" style={{fontSize: '64px', marginBottom: '15px', color: '#e2e8f0'}} /><h3 style={{margin: 0, fontSize: '18px'}}>لم يتم إرفاق صورة للهوية</h3><p style={{margin: '5px 0 0', fontSize: '13px'}}>يجب استيفاء هذه الورقة وضمها لملف العميل.</p></div>)}</div><FT pg={5} /></div><DM /></div>
+    <div id="pdf-output" style={{display:'flex', flexDirection:'column', alignItems:'center', background:'#444', padding:20, gap:20}}>
+      <div className="page-a4"><WM/><div className="content-wrapper" style={{padding:'10mm'}}>
+        <div className="cover-header"><img src={LOGO} style={{height:100}}/><h1>ابن قايد المريسي</h1></div>
+        <div className="file-label">ملف حساب {f.fullName}</div>
+        <div><strong>الفرع:</strong> {f.branch} | <strong>الجوال:</strong> {f.mobile}</div>
+        <div className="designer-mark">Eslam Saeed</div>
+      </div></div>
     </div>
   );
 };
 
-// ============ APP ============
+// ============ التطبيق الرئيسي ============
 const App = () => {
   const [user, setUser] = useState(null);
   const [showClientForm, setShowClientForm] = useState(false);
