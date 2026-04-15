@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ابن قايد المريسي - نظام الحسابات V3.1</title>
@@ -9,16 +8,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Aref+Ruqaa:wght@400;700&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-
-<script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.9/babel.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="geo-data.js"></script>
 </head>
-
 <body>
 <div id="root"></div>
 
@@ -459,7 +455,7 @@ const ClientForm=({onBack})=>{
     accountType:'شخصي',names:Array(nameCount).fill(''),nickname:'',
     businessName:'',businessType:'',legalForm:'',
     idType:Object.keys(settings.idRules)[0],idNumber:'',idIssueDate:'',idExpiry:'',idIssuePlace:'',
-    birthDate:'',country:'اليمن',birthGov:'',birthDistrict:'',address:'',
+    birthDate:'',country:'اليمن',birthGov:'',birthDistrict:'',birthArea:'',address:'',
     mobileType:'yemeni',mobile:'',countryCode:'+967',phone:'',email:'',branch:'',
     currencies:[],services:[],authorized:[{name:'',id:'',phone:'',permissions:[],signature:null}],
     sampleSignatures:[null,null,null],mainSignature:null,idPhotos:{},termsAccepted:false
@@ -471,8 +467,9 @@ const ClientForm=({onBack})=>{
   const req=(f)=>reqFields.includes(f);
 
   useEffect(()=>{if(fd.idIssueDate&&/^\d{4}-\d{2}-\d{2}$/.test(fd.idIssueDate)&&idRule)uf('idExpiry',addYears(fd.idIssueDate,idRule.expiryYears,idRule.expiryMinusDay));},[fd.idIssueDate,fd.idType]);
-  useEffect(()=>{uf('birthGov','');uf('birthDistrict','');uf('address','');},[fd.country]);
-  useEffect(()=>{uf('birthDistrict','');uf('address','');},[fd.birthGov]);
+  useEffect(()=>{uf('birthGov','');uf('birthDistrict','');uf('birthArea','');uf('address','');},[fd.country]);
+  useEffect(()=>{uf('birthDistrict','');uf('birthArea','');uf('address','');},[fd.birthGov]);
+  useEffect(()=>{uf('birthArea','');uf('address','');},[fd.birthDistrict]);
 
   const validate=(s)=>{
     const e={};
@@ -486,44 +483,14 @@ const ClientForm=({onBack})=>{
     return e;
   };
   const nx=()=>{const er=validate(step);if(Object.keys(er).length===0){setErrs({});setStep(s=>Math.min(s+1,T));}else{setErrs(er);setToast({msg:'أكمل الحقول الإلزامية',type:'error'});setShakeBtn(true);setTimeout(()=>setShakeBtn(false),500);}};
-  const submitForm=()=>{
-  const stepErrors = [validate(1), validate(2), validate(3), validate(4), validate(5), validate(6), validate(7)];
-  let firstErrorStep = -1;
-  let allE = {};
-  
-  stepErrors.forEach((err, idx) => {
-    if(Object.keys(err).length > 0) {
-      Object.assign(allE, err);
-      if(firstErrorStep === -1) firstErrorStep = idx + 1;
-    }
-  });
-
-  if(Object.keys(allE).length > 0){
-    setErrs(allE);
-    setStep(firstErrorStep);
-    setToast({msg: `يوجد نقص في بيانات مرحلة: ${stepLabels[firstErrorStep-1]}`, type: 'error'});
-    setShakeBtn(true);
-    setTimeout(() => setShakeBtn(false), 500);
-    return;
-  }
-  
-  const fullName=[...fd.names,fd.nickname].filter(Boolean).join(' ');
-  const finalMobile=fd.mobileType==='yemeni'?'+967'+fd.mobile:fd.countryCode+fd.mobile;
-  const seqId=nextSeqId();
-  const sub={...fd,fullName,mobile:finalMobile,id:seqId,status:'pending',submittedAt:isoDate()};
-  const subs=DB.get('submissions')||[];
-  DB.set('submissions',[...subs,sub]);
-  setSubData(sub);
-  setSubmitted(true);
-  try{sendNotification(sub);}catch(e){}
-};
-
+  const submitForm=()=>{let allE={};for(let i=1;i<=T;i++)Object.assign(allE,validate(i));if(Object.keys(allE).length>0){setErrs(allE);setToast({msg:'هناك حقول ناقصة',type:'error'});return;}const fullName=[...fd.names,fd.nickname].filter(Boolean).join(' ');const finalMobile=fd.mobileType==='yemeni'?'+967'+fd.mobile:fd.countryCode+fd.mobile;const seqId=nextSeqId();const sub={...fd,fullName,mobile:finalMobile,id:seqId,status:'pending',submittedAt:isoDate()};const subs=DB.get('submissions')||[];DB.set('submissions',[...subs,sub]);setSubData(sub);setSubmitted(true);try{sendNotification(sub);}catch(e){}};
   const getPhotoConfig=()=>{if(fd.idType.includes('شخصية')||fd.idType.includes('ذكية')||fd.idType.includes('عائلية'))return[{id:'front',label:'الوجه الأمامي'},{id:'back',label:'الوجه الخلفي'}];if(fd.idType.includes('جواز'))return[{id:'passport',label:'صفحة البيانات'}];return[{id:'main',label:'صورة الهوية'}];};
   const handlePhoto=(id,file)=>{if(!file)return;const r=new FileReader();r.onload=e=>setFd(p=>({...p,idPhotos:{...p.idPhotos,[id]:e.target.result}}));r.readAsDataURL(file);};
 
   // V3.1: Geo data helpers with fallback
   const provinces=getGeoProvinces(fd.country);
   const districts=getGeoDistricts(fd.country,fd.birthGov);
+  const areas=getGeoAreas(fd.country,fd.birthGov,fd.birthDistrict);
   const hasGeo=typeof worldGeoData!=='undefined'&&worldGeoData[fd.country];
 
   if(submitted)return(
@@ -561,19 +528,9 @@ const ClientForm=({onBack})=>{
             {/* Step 2 */}
             {step===2&&<div className="fade-in"><Fld label="نوع الحساب"><div style={{display:'flex',gap:10}}>{['شخصي','تجاري'].map(t=><button key={t} onClick={()=>uf('accountType',t)} style={{...chip(fd.accountType===t),flex:1,textAlign:'center',padding:12}}>{t==='شخصي'?'👤':'🏢'} {t}</button>)}</div></Fld><div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:8}}>{fd.names.map((n,i)=>i<nameCount&&<Fld key={i} label={nameLabels[i]||`اسم ${i+1}`} req={req('names')} err={errs[`name_${i}`]}><input style={inp(errs[`name_${i}`])} value={n} onChange={e=>updateName(i,e.target.value)}/></Fld>)}<Fld label="اللقب" req={req('nickname')} err={errs.nickname}><input style={inp(errs.nickname)} value={fd.nickname} onChange={e=>uf('nickname',e.target.value)}/></Fld></div>{fd.accountType==='تجاري'&&<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:8}}><Fld label="الاسم التجاري" req={req('businessName')} err={errs.businessName}><input style={inp(errs.businessName)} value={fd.businessName} onChange={e=>uf('businessName',e.target.value)}/></Fld><Fld label="نوع النشاط"><input style={inp()} value={fd.businessType} onChange={e=>uf('businessType',e.target.value)}/></Fld><Fld label="الشكل القانوني" req={req('legalForm')} err={errs.legalForm}><select style={inp(errs.legalForm)} value={fd.legalForm} onChange={e=>uf('legalForm',e.target.value)}><option value="">اختر</option>{settings.legalForms.map(f=><option key={f}>{f}</option>)}</select></Fld></div>}</div>}
             {/* Step 3 */}
-            {step===3&&<div className="fade-in" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}><Fld label="نوع الهوية" req={req('idType')}><select style={inp()} value={fd.idType} onChange={e=>{uf('idType',e.target.value);uf('idNumber','');uf('idExpiry','');}}>{Object.keys(settings.idRules).map(t=><option key={t}>{t}</option>)}</select></Fld><Fld label={`رقم الهوية (${idRule.digits} رقم)`} req={req('idNumber')} err={errs.idNumber} errMsg={errs.idNumber}><input style={inp(errs.idNumber)} value={fd.idNumber} onChange={e=>uf('idNumber',e.target.value.replace(/\D/g,'').slice(0,idRule.digits))} maxLength={idRule.digits}/><div style={{fontSize:10,color:fd.idNumber.length===idRule.digits?'#16a34a':'#94a3b8',marginTop:2}}>{fd.idNumber.length}/{idRule.digits}</div></Fld><div style={{gridColumn:'span 2'}}><Fld label="تاريخ الإصدار" req={req('idIssueDate')} err={errs.idIssueDate} errMsg={errs.idIssueDate}><DatePicker value={fd.idIssueDate} onChange={v=>uf('idIssueDate',v)} err={errs.idIssueDate} minY={settings.dateRanges?.issueDate?.min} maxY={settings.dateRanges?.issueDate?.max}/></Fld></div>{fd.idExpiry&&<div style={{gridColumn:'span 2'}}><Fld label={`تاريخ الانتهاء (تلقائي +${idRule.expiryYears} سنة)`}><div style={{padding:'10px 14px',background:'#f0fdf4',border:'1.5px solid #bbf7d0',borderRadius:12,fontSize:14,fontWeight:700,color:'#16a34a',textAlign:'center'}}>{new Date(fd.idExpiry).toLocaleDateString('ar-YE',{year:'numeric',month:'long',day:'numeric'})}</div></Fld></div>}<Fld label="مكان الإصدار" req={req('idIssuePlace')} err={errs.idIssuePlace}>
-  {typeof worldGeoData !== 'undefined' && worldGeoData['اليمن'] ? (
-    <select style={inp(errs.idIssuePlace)} value={fd.idIssuePlace} onChange={e=>uf('idIssuePlace',e.target.value)}>
-      <option value="">اختر المحافظة</option>
-      {Object.keys(worldGeoData['اليمن']).map(g=><option key={g}>{g}</option>)}
-    </select>
-  ) : (
-    <input style={inp(errs.idIssuePlace)} value={fd.idIssuePlace} onChange={e=>uf('idIssuePlace',e.target.value)} placeholder="اكتب مكان الإصدار"/>
-  )}
-</Fld>
-<div/><div style={{gridColumn:'span 2'}}><Fld label="تاريخ الميلاد" req={req('birthDate')} err={errs.birthDate} errMsg={errs.birthDate}><DatePicker value={fd.birthDate} onChange={v=>uf('birthDate',v)} err={errs.birthDate} minY={settings.dateRanges?.birthDate?.min} maxY={settings.dateRanges?.birthDate?.max}/>{fd.birthDate&&/^\d{4}-\d{2}-\d{2}$/.test(fd.birthDate)&&<div style={{fontSize:11,color:calcAge(fd.birthDate)<settings.minAge?'#dc2626':'#16a34a',marginTop:4,fontWeight:700}}>العمر: {calcAge(fd.birthDate)} سنة</div>}</Fld></div></div>}
+            {step===3&&<div className="fade-in" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}><Fld label="نوع الهوية" req={req('idType')}><select style={inp()} value={fd.idType} onChange={e=>{uf('idType',e.target.value);uf('idNumber','');uf('idExpiry','');}}>{Object.keys(settings.idRules).map(t=><option key={t}>{t}</option>)}</select></Fld><Fld label={`رقم الهوية (${idRule.digits} رقم)`} req={req('idNumber')} err={errs.idNumber} errMsg={errs.idNumber}><input style={inp(errs.idNumber)} value={fd.idNumber} onChange={e=>uf('idNumber',e.target.value.replace(/\D/g,'').slice(0,idRule.digits))} maxLength={idRule.digits}/><div style={{fontSize:10,color:fd.idNumber.length===idRule.digits?'#16a34a':'#94a3b8',marginTop:2}}>{fd.idNumber.length}/{idRule.digits}</div></Fld><div style={{gridColumn:'span 2'}}><Fld label="تاريخ الإصدار" req={req('idIssueDate')} err={errs.idIssueDate} errMsg={errs.idIssueDate}><DatePicker value={fd.idIssueDate} onChange={v=>uf('idIssueDate',v)} err={errs.idIssueDate} minY={settings.dateRanges?.issueDate?.min} maxY={settings.dateRanges?.issueDate?.max}/></Fld></div>{fd.idExpiry&&<div style={{gridColumn:'span 2'}}><Fld label={`تاريخ الانتهاء (تلقائي +${idRule.expiryYears} سنة)`}><div style={{padding:'10px 14px',background:'#f0fdf4',border:'1.5px solid #bbf7d0',borderRadius:12,fontSize:14,fontWeight:700,color:'#16a34a',textAlign:'center'}}>{new Date(fd.idExpiry).toLocaleDateString('ar-YE',{year:'numeric',month:'long',day:'numeric'})}</div></Fld></div>}<Fld label="مكان الإصدار" req={req('idIssuePlace')} err={errs.idIssuePlace}><input style={inp(errs.idIssuePlace)} value={fd.idIssuePlace} onChange={e=>uf('idIssuePlace',e.target.value)}/></Fld><div/><div style={{gridColumn:'span 2'}}><Fld label="تاريخ الميلاد" req={req('birthDate')} err={errs.birthDate} errMsg={errs.birthDate}><DatePicker value={fd.birthDate} onChange={v=>uf('birthDate',v)} err={errs.birthDate} minY={settings.dateRanges?.birthDate?.min} maxY={settings.dateRanges?.birthDate?.max}/>{fd.birthDate&&/^\d{4}-\d{2}-\d{2}$/.test(fd.birthDate)&&<div style={{fontSize:11,color:calcAge(fd.birthDate)<settings.minAge?'#dc2626':'#16a34a',marginTop:4,fontWeight:700}}>العمر: {calcAge(fd.birthDate)} سنة</div>}</Fld></div></div>}
             {/* Step 4 - V3.1: geo fallback to text input */}
-            {step===4&&<div className="fade-in" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}><Fld label="الدولة" req={req('country')} err={errs.country}><select style={inp(errs.country)} value={fd.country} onChange={e=>uf('country',e.target.value)}><option value="">اختر</option>{(settings.countries||[]).map(c=><option key={c}>{c}</option>)}</select></Fld>{hasGeo?<><Fld label="المحافظة/المنطقة" req={req('birthGov')} err={errs.birthGov}>{provinces.length>0?<select style={inp(errs.birthGov)} value={fd.birthGov} onChange={e=>uf('birthGov',e.target.value)}><option value="">اختر</option>{provinces.map(p=><option key={p}>{p}</option>)}</select>:<input style={inp(errs.birthGov)} value={fd.birthGov} onChange={e=>uf('birthGov',e.target.value)} placeholder="اكتب المحافظة"/>}</Fld>{fd.birthGov&&<Fld label="المديرية">{districts.length>0?<select style={inp()} value={fd.birthDistrict} onChange={e=>uf('birthDistrict',e.target.value)}><option value="">اختر</option>{districts.map(d=><option key={d}>{d}</option>)}</select>:<input style={inp()} value={fd.birthDistrict} onChange={e=>uf('birthDistrict',e.target.value)} placeholder="اكتب المديرية"/>}</Fld>}<div style={{gridColumn:'span 2'}}><Fld label="العنوان التفصيلي"><input style={inp()} value={fd.address} onChange={e=>uf('address',e.target.value)} placeholder="الحي / الشارع"/></Fld></div></>:<><div style={{gridColumn:'span 1'}}><Fld label="المنطقة" req={req('birthGov')} err={errs.birthGov}><input style={inp(errs.birthGov)} value={fd.birthGov} onChange={e=>uf('birthGov',e.target.value)} placeholder="المنطقة/المحافظة"/></Fld></div><div style={{gridColumn:'span 2'}}><Fld label="العنوان"><input style={inp()} value={fd.address} onChange={e=>uf('address',e.target.value)} placeholder="العنوان الكامل"/></Fld></div></>}
+            {step===4&&<div className="fade-in" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}><Fld label="الدولة" req={req('country')} err={errs.country}><select style={inp(errs.country)} value={fd.country} onChange={e=>uf('country',e.target.value)}><option value="">اختر</option>{(settings.countries||[]).map(c=><option key={c}>{c}</option>)}</select></Fld>{hasGeo?<><Fld label="المحافظة" req={req('birthGov')} err={errs.birthGov}>{provinces.length>0?<select style={inp(errs.birthGov)} value={fd.birthGov} onChange={e=>uf('birthGov',e.target.value)}><option value="">اختر</option>{provinces.map(p=><option key={p}>{p}</option>)}</select>:<input style={inp(errs.birthGov)} value={fd.birthGov} onChange={e=>uf('birthGov',e.target.value)} placeholder="اكتب المحافظة"/>}</Fld>{fd.birthGov&&<Fld label="المديرية">{districts.length>0?<select style={inp()} value={fd.birthDistrict} onChange={e=>uf('birthDistrict',e.target.value)}><option value="">اختر</option>{districts.map(d=><option key={d}>{d}</option>)}</select>:<input style={inp()} value={fd.birthDistrict} onChange={e=>uf('birthDistrict',e.target.value)} placeholder="اكتب المديرية"/>}</Fld>}{fd.birthDistrict&&<Fld label="المنطقة / الحي">{areas.length>0?<select style={inp()} value={fd.birthArea} onChange={e=>uf('birthArea',e.target.value)}><option value="">اختر</option>{areas.map(a=><option key={a}>{a}</option>)}</select>:<input style={inp()} value={fd.birthArea} onChange={e=>uf('birthArea',e.target.value)} placeholder="اكتب المنطقة"/>}</Fld>}<div style={{gridColumn:'span 2'}}><Fld label="العنوان التفصيلي"><input style={inp()} value={fd.address} onChange={e=>uf('address',e.target.value)} placeholder="معلم بارز / الشارع"/></Fld></div></>:<><div style={{gridColumn:'span 1'}}><Fld label="المنطقة" req={req('birthGov')} err={errs.birthGov}><input style={inp(errs.birthGov)} value={fd.birthGov} onChange={e=>uf('birthGov',e.target.value)} placeholder="المنطقة/المحافظة"/></Fld></div><div style={{gridColumn:'span 2'}}><Fld label="العنوان"><input style={inp()} value={fd.address} onChange={e=>uf('address',e.target.value)} placeholder="العنوان الكامل"/></Fld></div></>}
               <div style={{gridColumn:'span 2',marginTop:10}}><Fld label="نوع الجوال"><div style={{display:'flex',gap:10}}>{[['yemeni','🇾🇪 يمني'],['intl','🌍 دولي']].map(([v,l])=><label key={v} style={{flex:1,padding:10,background:fd.mobileType===v?B.light:'#f8fafc',border:`1px solid ${fd.mobileType===v?B.purple:'#e2e8f0'}`,borderRadius:8,textAlign:'center',cursor:'pointer',fontWeight:700,fontSize:13}}><input type="radio" checked={fd.mobileType===v} onChange={()=>uf('mobileType',v)} style={{display:'none'}}/>{l}</label>)}</div></Fld><Fld label="رقم الجوال" req={req('mobile')} err={errs.mobile} errMsg={errs.mobile}><div style={{display:'flex',direction:'ltr',gap:5}}>{fd.mobileType==='yemeni'?<div style={{padding:'11px 16px',background:'#e2e8f0',borderRadius:'12px 0 0 12px',fontWeight:700,fontSize:14}}>967+</div>:<select style={{...inp(),width:120,borderRadius:'12px 0 0 12px'}} value={fd.countryCode} onChange={e=>uf('countryCode',e.target.value)}>{countryCodes.map(c=><option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}</select>}<input style={{...inp(errs.mobile),borderRadius:'0 12px 12px 0',flex:1}} value={fd.mobile} onChange={e=>uf('mobile',e.target.value.replace(/\D/g,''))} placeholder="رقم الجوال"/></div></Fld></div>
               <Fld label="هاتف ثابت"><input style={inp()} value={fd.phone} onChange={e=>uf('phone',e.target.value)}/></Fld><Fld label="البريد"><input type="email" style={inp()} value={fd.email} onChange={e=>uf('email',e.target.value)}/></Fld>
               <div style={{gridColumn:'span 2'}}><Fld label="الفرع" req={req('branch')} err={errs.branch}><select style={inp(errs.branch)} value={fd.branch} onChange={e=>uf('branch',e.target.value)}><option value="">اختر</option>{settings.branches.map(b=><option key={b}>{b}</option>)}</select></Fld></div>
