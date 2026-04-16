@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة الوصول الآمن | ابن قايد المريسي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
+        body { font-family: 'Tajawal', sans-serif; background-color: #050505; color: #e4e4e7; }
+        .glass-panel { background: rgba(20, 20, 25, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="status-card" class="glass-panel w-full max-w-md p-8 rounded-2xl text-center">
+        <div id="loader" class="w-16 h-16 border-4 border-t-blue-500 border-gray-800 rounded-full animate-spin mx-auto mb-6"></div>
+        <div id="icon" class="hidden mx-auto mb-6 w-16 h-16 flex items-center justify-center rounded-full"></div>
+        
+        <h1 id="title" class="text-2xl font-bold mb-3 text-white">جاري فحص التشفير...</h1>
+        <p id="message" class="text-gray-400 text-sm leading-relaxed">بوابة نظام الحسابات V3.1 - ابن قايد المريسي</p>
+    </div>
+
+    <script>
+        // مفتاح التشفير السري (يجب أن يتطابق مع المولد)
+        const SECRET_KEY = "MURISI_V3";
+
+        function decipherToken(token) {
+            try {
+                const cipher = atob(token);
+                let decodedData = "";
+                for(let i = 0; i < cipher.length; i++){
+                    decodedData += String.fromCharCode(cipher.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length));
+                }
+                return JSON.parse(decodeURIComponent(decodedData));
+            } catch(e) {
+                return null;
+            }
+        }
+
+        window.onload = () => {
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get('token');
+            const titleEl = document.getElementById('title');
+            const msgEl = document.getElementById('message');
+            const loader = document.getElementById('loader');
+            const icon = document.getElementById('icon');
+
+            function showState(isSuccess, title, msg) {
+                loader.classList.add('hidden');
+                icon.classList.remove('hidden');
+                icon.classList.add(isSuccess ? 'bg-green-500/10' : 'bg-red-500/10', isSuccess ? 'text-green-500' : 'text-red-500');
+                icon.innerHTML = isSuccess ? 
+                    `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>` : 
+                    `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>`;
+                titleEl.innerText = title;
+                msgEl.innerText = msg;
+            }
+
+            if (!token) {
+                showState(false, "وصول مرفوض", "لا يوجد تصريح دخول صالح لهذا الرابط.");
+                return;
+            }
+
+            const data = decipherToken(token);
+
+            if (!data || !data.u || !data.e) {
+                showState(false, "رابط تالف", "بنية التشفير غير صحيحة أو تم التلاعب بها.");
+                return;
+            }
+
+            if (Date.now() > data.e) {
+                showState(false, "انتهت الصلاحية", "عذراً، انقضت المدة المحددة لهذا الرابط. يرجى طلب رابط جديد.");
+                return;
+            }
+
+            // Success
+            showState(true, "تم التصريح", "تشفير سليم. جاري توجيهك إلى نظام الحسابات V3.1...");
+            setTimeout(() => {
+                window.location.replace(data.u);
+            }, 1500);
+        };
+    </script>
+</body>
+</html>
