@@ -13,7 +13,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" async></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// Supabase fallback CDN
+if(!window.supabase){
+  var s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js';
+  document.head.appendChild(s);
+}
+</script>
 <script src="geo-data.js"></script>
 </head>
 <body>
@@ -32,16 +40,62 @@ var LOGO = "https://i.ibb.co/Zpqj6KF0/251029-001757.jpg";
 var SUPA_URL = 'https://apjavwqbdxnyrxsbuvop.supabase.co';
 var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwamF2d3FiZHhueXJ4c2J1dm9wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NzkyNjIsImV4cCI6MjA5MTE1NTI2Mn0.UJLEGOygjUugQquFDzuamlnFKpfuhAolz4kzt0Jral4';
 var supabase = null;
-try { supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY); } catch(e) { console.warn('Supabase init failed, using localStorage fallback'); }
+var initSupabase = function() {
+  if(supabase) return true;
+  try {
+    if(window.supabase && window.supabase.createClient) {
+      supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+      console.log('✅ Supabase connected');
+      return true;
+    }
+  } catch(e) {}
+  return false;
+};
+// Try now
+initSupabase();
+// Retry after 2 seconds if failed (CDN might be slow)
+if(!supabase) setTimeout(function(){ if(initSupabase()) console.log('✅ Supabase connected (retry)'); else console.warn('⚠ Supabase unavailable, using localStorage'); }, 2000);
 
 /* ===== GOOGLE AI ===== */
 var AI_KEY = 'AIzaSyD4ri6bUb7aiJh_stdr5dX-3qcsmKzrW8s';
 var AI_MODELS = ['gemini-2.0-flash','gemini-1.5-flash','gemini-pro'];
-var AI_MODEL_IDX = 0;
+
+// Local Q&A fallback when API is blocked
+var LOCAL_QA = [
+  {q:['مرحب','هلا','السلام','اهلا','صباح','مساء'],a:'مرحباً بك! أنا المساعد الذكي لشركة ابن قايد المريسي. كيف يمكنني مساعدتك في فتح حسابك؟'},
+  {q:['خطو','مراحل','كيف افتح','طريقة','ابدأ','ابدا'],a:'فتح الحساب يتم عبر 7 مراحل بسيطة:\n1️⃣ الموافقة على الشروط\n2️⃣ البيانات الأساسية (الاسم واللقب)\n3️⃣ بيانات الهوية والتواريخ\n4️⃣ العنوان والتواصل\n5️⃣ اختيار العملات والخدمات\n6️⃣ التوقيعات (3 نماذج + توقيع رئيسي)\n7️⃣ رفع صور الهوية'},
+  {q:['هوية','بطاقة','جواز','وثائق','مستند'],a:'أنواع الهويات المقبولة:\n• بطاقة شخصية (11 رقم)\n• بطاقة ذكية (12 رقم)\n• جواز سفر (8 أرقام)\nيجب أن تكون الهوية سارية المفعول.'},
+  {q:['اسم','اسماء','كم اسم'],a:'المطلوب:\n• الاسم الأول (إلزامي)\n• اسم الأب (إلزامي)\n• اسم الجد (إلزامي)\n• اللقب العائلي (إلزامي)\n• يمكن إضافة اسم رابع اختياري عبر زر (+)\nاكتب الأسماء كما هي في الهوية بالضبط.'},
+  {q:['توقيع','وقع','كيف اوقع'],a:'في المرحلة 6 ستوقع:\n• 3 نماذج توقيعات فرعية\n• توقيع رئيسي واحد\nاضغط على المربع وارسم توقيعك بإصبعك أو بالقلم.'},
+  {q:['صور','مرفق','رفع','كاميرا'],a:'في المرحلة 7 ارفع صور الهوية:\n• بطاقة شخصية/ذكية: وجه أمامي + خلفي\n• جواز سفر: صفحة البيانات\nيمكنك الرفع من المعرض أو التصوير مباشرة بالكاميرا.'},
+  {q:['عمل','عملة','ريال','دولار','درهم'],a:'العملات المتاحة:\n• ريال يمني\n• ريال سعودي\n• دولار أمريكي\n• درهم إماراتي\n• يورو\nاختر عملة واحدة على الأقل.'},
+  {q:['فرع','فروع','اين','عنوان الشركة'],a:'فروعنا:\n• المركز الرئيسي - الضالع\n• فرع مريس\n• فرع دمت\n• فرع قعطبة'},
+  {q:['تجاري','شركة','مؤسسة'],a:'لفتح حساب تجاري اختر "تجاري" في المرحلة 2، وستظهر حقول إضافية:\n• الاسم التجاري\n• نوع النشاط\n• الشكل القانوني'},
+  {q:['مشكل','خطأ','لا يعمل','ما يشتغل','مساعد'],a:'إذا واجهت مشكلة:\n• تأكد من ملء جميع الحقول الإلزامية (المميزة بـ *)\n• تأكد أن رقم الهوية بالعدد الصحيح\n• تأكد أن العمر 14 سنة فأكثر\n• جرب تحديث الصفحة\nإذا استمرت المشكلة تواصل مع الإدارة.'},
+  {q:['عمر','سن','كم العمر'],a:'الحد الأدنى للعمر هو 14 سنة. إذا كان عمرك أقل من ذلك لا يمكن فتح حساب.'},
+  {q:['وقت','كم يستغرق','مدة'],a:'تعبئة النموذج تستغرق حوالي 5-10 دقائق. بعد الإرسال تتم مراجعة الطلب من الإدارة.'},
+  {q:['رقم','جوال','هاتف','تواصل'],a:'أدخل رقم جوالك:\n• يمني: يبدأ بـ 77 أو 71 أو 70 أو 73 أو 78 (9 أرقام)\n• دولي: اختر رمز الدولة ثم أدخل الرقم'},
+  {q:['شكر','ممتاز','جميل','رائع'],a:'شكراً لك! نتمنى لك تجربة سهلة وممتعة. إذا احتجت أي مساعدة أخرى لا تتردد.'}
+];
+
+var findLocalAnswer = function(q) {
+  var ql = q.toLowerCase().trim();
+  for(var i=0; i<LOCAL_QA.length; i++) {
+    for(var j=0; j<LOCAL_QA[i].q.length; j++) {
+      if(ql.indexOf(LOCAL_QA[i].q[j]) >= 0) return LOCAL_QA[i].a;
+    }
+  }
+  return 'أنا هنا لمساعدتك في فتح حسابك. يمكنك سؤالي عن:\n• خطوات فتح الحساب\n• أنواع الهويات المطلوبة\n• كيفية التوقيع\n• رفع المرفقات\n• الفروع والعملات\nاكتب سؤالك وسأساعدك!';
+};
 
 var askAI = function(systemPrompt, userMessage, callback) {
+  // Try API first
   var tryModel = function(idx) {
-    if(idx >= AI_MODELS.length) { callback('عذراً، الخدمة غير متاحة حالياً. حاول لاحقاً.'); return; }
+    if(idx >= AI_MODELS.length) {
+      // All API models failed — use local fallback
+      callback(findLocalAnswer(userMessage));
+      return;
+    }
     var url = 'https://generativelanguage.googleapis.com/v1beta/models/'+AI_MODELS[idx]+':generateContent?key='+AI_KEY;
     fetch(url, {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -54,13 +108,12 @@ var askAI = function(systemPrompt, userMessage, callback) {
       if(!r.ok) throw new Error('HTTP '+r.status);
       return r.json();
     }).then(function(d){
-      if(d.error) { console.warn('AI model '+AI_MODELS[idx]+' failed:', d.error.message); tryModel(idx+1); return; }
+      if(d.error) { tryModel(idx+1); return; }
       var text = d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts && d.candidates[0].content.parts[0] && d.candidates[0].content.parts[0].text;
-      if(text) { AI_MODEL_IDX = idx; callback(text); }
-      else tryModel(idx+1);
-    }).catch(function(e){ console.warn('AI model '+AI_MODELS[idx]+' error:', e); tryModel(idx+1); });
+      if(text) callback(text); else tryModel(idx+1);
+    }).catch(function(){ tryModel(idx+1); });
   };
-  tryModel(AI_MODEL_IDX);
+  tryModel(0);
 };
 
 var CLIENT_AI_PROMPT = 'أنت مساعد خدمة عملاء لشركة ابن قايد المريسي للصرافة والتحويلات. مهمتك الوحيدة مساعدة العملاء في فتح حساب جديد. أجب فقط عن: خطوات فتح الحساب، الحقول المطلوبة، المستندات اللازمة، حل مشاكل التسجيل. لا تجب عن أي شيء آخر. إذا سُئلت عن شيء خارج نطاقك قل: هذا خارج نطاق خدمتي. أجب بالعربية فقط وبإيجاز.';
