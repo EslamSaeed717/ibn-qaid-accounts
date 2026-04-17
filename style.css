@@ -110,7 +110,7 @@ img{max-width:100%;height:auto}
 }
 @page{size:A4 portrait;margin:0}
 
-.page-a4{background:white;width:210mm;min-height:296mm;position:relative;overflow:hidden;display:flex;flex-direction:column;border-top:15px solid var(--brand-orange);border-bottom:15px solid var(--brand-purple);font-family:'Cairo',sans-serif;direction:rtl;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;margin-bottom:20px;box-shadow:0 10px 30px rgba(0,0,0,0.2)}
+.page-a4{background:white;width:210mm;height:296mm;max-height:296mm;position:relative;overflow:hidden;display:flex;flex-direction:column;border-top:15px solid var(--brand-orange);border-bottom:15px solid var(--brand-purple);font-family:'Cairo',sans-serif;direction:rtl;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;margin-bottom:20px;box-shadow:0 10px 30px rgba(0,0,0,0.2);page-break-inside:avoid;break-inside:avoid}
 .watermark-container{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;opacity:0.03;z-index:0;pointer-events:none;display:flex;justify-content:center;align-items:center}
 .watermark-img{width:100%;height:auto;filter:grayscale(100%)}
 .content-wrapper{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;padding:10mm 15mm;gap:15px;justify-content:space-between}
@@ -224,3 +224,8 @@ img{max-width:100%;height:auto}
   .progress-steps{overflow-x:auto}
   .photos-page-grid{grid-template-columns:1fr}
 }
+
+/* PDF output specific - no gaps between pages */
+#pdf-output .page-a4{margin-bottom:0!important;box-shadow:none!important}
+#pdf-output{background:white!important}
+
