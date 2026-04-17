@@ -755,21 +755,163 @@ var ClientForm=function(p){
 var PDFDoc=function(props){
   var f=props.f;var op=props.op;var td=todayAr();var s=SDB.getSettingsSync();var pdf=(s.pdfSettings||{});
   var fullName=f.full_name||f.fullName||((f.names||[]).concat([f.nickname]).filter(Boolean).join(' '));
-  var phones=pdf.phones||['775122022'];var footerAddr=pdf.footerAddress||'الضالع - مريس';
-  var hasPhotos=f.id_photos&&Object.values(f.id_photos||f.idPhotos||{}).some(Boolean);
-  var WM=function(){return <div className="watermark-container"><img src={LOGO} alt="" className="watermark-img"/></div>;};
-  var DM=function(){return <div className="designer-mark">Eslam Saeed</div>;};
-  var Chk=function(pp){return <span className="box">{pp.on?'✓':''}</span>;};
+  var namesOnly=(f.names||[]).filter(Boolean).join(' ');
+  var phones=pdf.phones||['778999567','775122022','773308998','778419081'];
+  var footerAddr=pdf.footerAddress||'المركز الرئيسي: الضالع - مريس - الجبارة | فرع قعطبة';
   var ref=f.ref_number||f.id||'';
+  var sig=f.main_signature||f.mainSignature;
+  var sigs=f.sample_signatures||f.sampleSignatures||[];
+  var WM=function(){return <div className="watermark-container"><img src={LOGO} alt="" className="watermark-img"/></div>;};
+  var DM=function(){return <div className="designer-mark">Designed by Eslam Saeed</div>;};
+  var Chk=function(pp){return <span className="box" style={{width:18,height:18,fontSize:14}}>{pp.on?'✓':''}</span>;};
+  var HW=function(pp){return <span style={{fontFamily:'Aref Ruqaa, Cairo, serif',color:'#1a237e',fontWeight:700,fontSize:pp.big?18:15}}>{pp.children}</span>;};
+  var FT=function(pp){return <div style={{borderTop:'2px solid #e2e8f0',paddingTop:8,display:'flex',justifyContent:'space-between',fontSize:10,color:'#777',marginTop:'auto'}}><div style={{fontWeight:700}}>ابن قايد المريسي للصرافة والتحويلات</div>{pp.code&&<div>رقم النموذج: {pp.code}</div>}<div>صفحة {pp.pg} من 4</div></div>;};
+
   return <div id="pdf-output" style={{display:'flex',flexDirection:'column',alignItems:'center',background:'#444',padding:20,gap:20}}>
-    {/* Page 1: Cover */}
-    <div className="page-a4"><WM/><div className="content-wrapper" style={{padding:'10mm 15mm 5mm'}}><div className="cover-header"><div className="logo-container"><img src={LOGO} className="logo-img" alt=""/></div><h1 className="company-title">ابن قايد المريسي للصرافة والتحويلات</h1><div className="company-subtitle">Ibn Qaid Al-Marisi Exchange</div></div><div className="file-label-box"><div className="file-label">ملف حساب عميل</div></div><div className="cover-fields"><div className="field-row"><div className="field-label"><i className="fas fa-map-marker-alt"/> الفرع:</div><div className="input-display pdf-handwritten">{f.branch||''}</div></div><div className="field-row"><div className="field-label"><i className="fas fa-user-tie"/> اسم العميل:</div><div className="input-display pdf-handwritten">{fullName}</div></div><div className="field-row"><div className="field-label"><i className="fas fa-wallet"/> رقم الحساب:</div><div className="input-display account-input">{ref}</div></div></div><div className="cover-footer"><div className="contact-grid">{phones.map(function(p){return <div key={p} className="contact-pill"><i className="fas fa-phone-alt"/>{p}</div>;})}</div><div className="address-bar">{footerAddr}</div></div></div><DM/></div>
-    {/* Page 2: Terms */}
-    <div className="page-a4"><WM/><div className="content-wrapper" style={{padding:'15mm 20mm'}}><div className="title-box"><div className="main-title">شروط فتح حساب</div></div><ul className="terms-list">{[['تعبئة الاستمارة','والتوقيع عليها.'],['نماذج التوقيعات','أمام الموظف المختص.'],['السجل التجاري','ساري المفعول.'],['التفويض','لمن سيدير الحسابات.'],['حسن التعامل','تجنب الإساءة.'],['الغرض','الإيداعات والتحويلات فقط.'],['المشروعية','يُمنع غير القانوني.'],['المفوضون','المسؤولية الكاملة.'],['الإغلاق','عند عدم الالتزام.'],['العنوان','إخطار خطي عند التغيير.'],['صحة البيانات','المسؤولية القانونية.']].map(function(t,i){return <li key={i}><strong>{t[0]}:</strong> {t[1]}</li>;})}</ul><div className="declaration-section"><div className="declaration-text">تم الاطلاع والموافقة</div><div className="signature-row"><div className="sig-block"><span className="sig-label">العميل:</span><div className="sig-input pdf-handwritten">{fullName}</div></div><div className="sig-block"><span className="sig-label">التوقيع:</span><div className="sig-input">{(f.main_signature||f.mainSignature)&&<img src={f.main_signature||f.mainSignature} style={{height:24}} alt=""/>}</div></div></div></div><div className="footer-small"><div>ابن قايد المريسي</div><div>صفحة 2</div></div></div><DM/></div>
-    {/* Page 3: Data */}
-    <div className="page-a4"><WM/><div className="content-wrapper" style={{padding:'8mm 12mm',gap:12}}><div className="page-header"><div className="header-title">بيانات العميل</div><div className="header-meta"><div className="meta-field">{ref}</div><div className="meta-field">{td}</div></div></div><div className="section-container"><div className="section-label"><i className="fas fa-user-circle"/> البيانات</div><div className="fields-grid">{[[8,'الاسم',fullName],[4,'اللقب',f.nickname],[3,'نوع الهوية',f.id_type||f.idType],[3,'الرقم',f.id_number||f.idNumber],[3,'الإصدار',f.id_issue_date||f.idIssueDate],[3,'الانتهاء',f.id_expiry||f.idExpiry]].map(function(r,i){return <div key={i} className="field-group" style={{gridColumn:'span '+r[0]}}><span className="label">{r[1]}:</span><div className="input pdf-handwritten">{r[2]||''}</div></div>;})}</div></div><div className="section-container"><div className="section-label"><i className="fas fa-map-marker-alt"/> العنوان</div><div className="fields-grid">{[[12,'العنوان',(f.country||'')+' '+(f.province||f.birthGov?'- '+(f.province||f.birthGov):'')+' '+(f.district||f.birthDistrict?'- '+(f.district||f.birthDistrict):'')],[4,'الجوال',f.mobile],[4,'الهاتف',f.phone],[4,'البريد',f.email]].map(function(r,i){return <div key={i} className="field-group" style={{gridColumn:'span '+r[0]}}><span className="label">{r[1]}:</span><div className="input pdf-handwritten">{r[2]||''}</div></div>;})}</div></div><div className="section-container"><div className="section-label"><i className="fas fa-coins"/> العملات</div><div className="checkbox-row">{(s.currencies||[]).map(function(c){return <div key={c} className="checkbox-item"><Chk on={(f.currencies||[]).indexOf(c)>=0}/>{c}</div>;})}</div></div><div className="section-container"><div className="section-label"><i className="fas fa-signature"/> التوقيعات</div><div className="sig-grid">{[0,1,2].map(function(i){var sigs=f.sample_signatures||f.sampleSignatures||[];return <div key={i} className="page-3-sig-card"><div className="sig-card-header">توقيع ({i+1})</div>{sigs[i]&&<img src={sigs[i]} style={{maxHeight:60,maxWidth:'90%'}} alt=""/>}</div>;})}</div></div><div className="footer-small"><div>ابن قايد المريسي</div><div>صفحة 3</div></div></div><DM/></div>
-    {/* Page 4: Auth */}
-    <div className="page-a4"><WM/><div className="content-wrapper" style={{padding:'8mm 12mm',gap:16,justifyContent:'space-between'}}><div className="page-header"><div className="header-title">المفوضين والموافقات</div></div><div><div className="section-label"><i className="fas fa-users-cog"/> المفوضون</div><div className="auth-table-container"><table className="auth-table"><thead><tr><th>البيانات</th><th>الصلاحيات</th><th>التوقيع</th></tr></thead><tbody>{[0,1].map(function(i){var auths=f.authorized||[];var a=auths[i]||{};return <tr key={i}><td><div style={{marginBottom:6}}><strong>الاسم:</strong> <span className="pdf-handwritten">{a.name||'....'}</span></div><div><strong>الهاتف:</strong> <span className="pdf-handwritten">{a.phone||'....'}</span></div></td><td><div className="permission-grid">{perms.map(function(pp){return <div key={pp} className="perm-item"><Chk on={(a.permissions||[]).indexOf(pp)>=0}/>{pp}</div>;})}</div></td><td style={{textAlign:'center'}}><div style={{height:80,border:'1px dashed #999',margin:4,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center'}}>{a.signature&&<img src={a.signature} style={{maxHeight:60}} alt=""/>}</div></td></tr>;})}</tbody></table></div></div><div className="approval-section"><div className="section-label"><i className="fas fa-file-signature"/> إقرار العميل</div><div className="approval-grid">{[['الاسم',fullName],['التوقيع',null],['التاريخ',td]].map(function(kv,i){return <div key={i} className="field-line"><span className="lbl">{kv[0]}:</span><div className="line">{i===1&&(f.main_signature||f.mainSignature)?<img src={f.main_signature||f.mainSignature} style={{height:24}} alt=""/>:<span className="pdf-handwritten">{kv[1]}</span>}</div></div>;})}</div></div><div className="employee-auth"><div style={{fontSize:11,fontWeight:700,width:'50%'}}>✓ مصادقة الموظف</div><div style={{display:'flex',gap:16,width:'45%'}}><div className="field-line"><span className="lbl">الموظف:</span><div className="line pdf-handwritten">{(op&&op.username)||''}</div></div></div></div><div className="admin-decision"><div className="admin-title">قرار الإدارة</div><div className="admin-grid"><div style={{textAlign:'center'}}><div className="line" style={{width:110}}/><span className="lbl">مدير الفرع</span></div><div className="stamp-box">ختم<br/>المنشأة</div><div style={{textAlign:'center'}}><div className="line" style={{width:110}}/><span className="lbl">المدير العام</span></div></div></div><div className="footer-small"><div>ابن قايد المريسي</div><div>صفحة 4</div></div></div><DM/></div>
+
+    {/* ===== PAGE 1: COVER ===== */}
+    <div className="page-a4"><WM/><div className="content-wrapper" style={{padding:'10mm 15mm 5mm'}}>
+      <div className="cover-header">
+        <div className="logo-container"><img src={LOGO} className="logo-img" alt=""/></div>
+        <h1 className="company-title">ابن قايد المريسي للصرافة والتحويلات</h1>
+        <div className="company-subtitle">IBN QAID AL-MARISI EXCHANGE</div>
+      </div>
+      <div className="file-label-box"><div className="file-label">ملف حساب عميل</div></div>
+      <div className="cover-fields">
+        <div className="field-row"><div className="field-label"><i className="fas fa-map-marker-alt"/> الفرع:</div><div className="input-display"><HW big={true}>{f.branch||''}</HW></div></div>
+        <div className="field-row"><div className="field-label"><i className="fas fa-user-tie"/> اسم العميل:</div><div className="input-display"><HW big={true}>{fullName}</HW></div></div>
+        <div className="field-row"><div className="field-label"><i className="fas fa-wallet"/> رقم الحساب:</div><div className="input-display account-input">{ref}</div></div>
+      </div>
+      <div className="cover-footer">
+        <div className="contact-grid">{phones.map(function(p){return <div key={p} className="contact-pill"><i className="fas fa-phone-alt"/>{p}</div>;})}</div>
+        <div className="address-bar">{footerAddr}</div>
+      </div>
+    </div><DM/></div>
+
+    {/* ===== PAGE 2: TERMS (Full original text) ===== */}
+    <div className="page-a4"><WM/><div className="content-wrapper" style={{padding:'12mm 18mm',gap:10}}>
+      <div className="title-box"><div className="main-title">شروط فتح حساب بغرض التعاملات المالية</div>
+        <div className="subtitle">بموجب الموافقة المبدئية من إدارة المنشأة على فتح حساب بغرض التحويل وصرافة العملات، فإنه لاستكمال فتح الحساب يجب استيفاء الشروط التالية:</div>
+      </div>
+      <ul className="terms-list">
+        <li><strong>تعبئة الاستمارة:</strong> تعبئة استمارة (طلب فتح حساب) والتوقيع عليها مع إرفاق صورة البطاقة الشخصية بعد مطابقتها مع الأصل.</li>
+        <li><strong>نماذج التوقيعات:</strong> التوقيع على كرت التوقيعات أمام الموظف المختص حصراً.</li>
+        <li><strong>السجل التجاري:</strong> إرفاق السجل التجاري بالنسبة للوكلاء والعملاء (سواء كانوا أفراداً أو شركات) وبعد مطابقة الصورة مع الأصل وعلى أن يكون ساري المفعول.</li>
+        <li><strong>التفويض:</strong> التوقيع على استمارة التفويض الخاصة لمن سيدير الحسابات أو مندوبين تتم بواسطتهم التعاملات المالية.</li>
+        <li><strong>حسن التعامل:</strong> تعهد العميل بتجنب أي عمل أو تصرف يسيء إلى التعامل أو يضعف الثقة بينه وبين المنشأة.</li>
+        <li><strong>الغرض من الحساب:</strong> يتم فتح الحساب لغرض الإيداعات والتحويلات وعملية المصارفة فقط.</li>
+        <li><strong>الاستخدام المشروع:</strong> يُمنع استخدام الحساب لأي أغراض غير قانونية أو مخالفة للأنظمة المالية المعتمدة.</li>
+        <li><strong>مسؤولية المفوضين:</strong> يتحمل العميل كامل المسؤولية القانونية عن أي تعاملات تتم بواسطة الأشخاص المفوضين المدرجين في استمارة التفويض.</li>
+        <li><strong>صلاحية الإغلاق:</strong> للمنشأة الحق في إغلاق الحساب وعدم قبول أي إيداع أو تحويل في حالة أن العميل لم يلتزم بما هو متفق عليه أو تجاوز حسابه العمليات الحسابية المعتادة.</li>
+        <li><strong>العنوان الرسمي:</strong> يعتبر العنوان الذي تعطونه في بياناتكم هو العنوان الرسمي لكم، وتتحملون مسؤولية تغييره دون إخطار خطي بذلك.</li>
+        <li><strong>الإقرار بصحة البيانات:</strong> يقر طالب فتح الحساب بأن جميع البيانات الواردة في استمارة فتح الحساب صحيحة.</li>
+      </ul>
+      <div className="declaration-section">
+        <div className="declaration-text">تم الاطلاع على الشروط أعلاه والموافقة عليها</div>
+        <div className="signature-row">
+          <div className="sig-block"><span className="sig-label">اسم العميل:</span><div className="sig-input"><HW>{fullName}</HW></div></div>
+          <div className="sig-block" style={{textAlign:'left'}}><span className="sig-label">التوقيع:</span><div className="sig-input">{sig&&<img src={sig} style={{height:30}} alt=""/>}</div></div>
+        </div>
+      </div>
+      <FT pg={2}/>
+    </div><DM/></div>
+
+    {/* ===== PAGE 3: CLIENT DATA (matching original template) ===== */}
+    <div className="page-a4"><WM/><div className="content-wrapper page-3-wrapper" style={{padding:'8mm 12mm',gap:10}}>
+      <div className="page-header">
+        <div className="header-title" style={{fontSize:22}}>استمارة طلب فتح حساب (بيانات العميل)</div>
+        <div className="header-meta">
+          <div className="meta-field">رقم الطلب: <strong>{ref}</strong></div>
+          <div className="meta-field">تاريخ الطلب: <strong>{td}</strong></div>
+        </div>
+      </div>
+
+      <div className="section-container">
+        <div className="section-label"><i className="fas fa-user-circle"/> 1. البيانات الأساسية للعميل / المنشأة</div>
+        <div className="fields-grid">
+          <div className="field-group" style={{gridColumn:'span 8'}}><span className="label">الاسم الرباعي:</span><div className="input"><HW>{namesOnly}</HW></div></div>
+          <div className="field-group" style={{gridColumn:'span 4'}}><span className="label">اللقب:</span><div className="input"><HW>{f.nickname||''}</HW></div></div>
+          <div className="field-group" style={{gridColumn:'span 6'}}><span className="label">الاسم التجاري:</span><div className="input"><HW>{f.business_name||f.businessName||''}</HW></div></div>
+          <div className="field-group" style={{gridColumn:'span 3'}}><span className="label">نوع النشاط:</span><div className="input"><HW>{f.business_type||f.businessType||''}</HW></div></div>
+          <div className="field-group" style={{gridColumn:'span 3'}}><span className="label">الشكل القانوني:</span><div className="input"><HW>{f.legal_form||f.legalForm||''}</HW></div></div>
+          <div className="field-group" style={{gridColumn:'span 3'}}><span className="label">نوع الهوية:</span><div className="input"><HW>{f.id_type||f.idType||''}</HW></div></div>
+          <div className="field-group" style={{gridColumn:'span 3'}}><span className="label">رقم الهوية:</span><div className="input" style={{fontFamily:'monospace'}}><HW>{f.id_number||f.idNumber||''}</HW></div></div>
+          <div className="field-group" style={{gridColumn:'span 3'}}><span className="label">تاريخ الإصدار:</span><div className="input"><HW>{f.id_issue_date||f.idIssueDate||''}</HW></div></div>
+          <div className="field-group" style={{gridColumn:'span 3'}}><span className="label">مكان الإصدار:</span><div className="input"><HW>{f.id_issue_place||f.idIssuePlace||''}</HW></div></div>
+          <div className="field-group" style={{gridColumn:'span 3'}}><span className="label">تاريخ الانتهاء:</span><div className="input"><HW>{f.id_expiry||f.idExpiry||''}</HW></div></div>
+          <div className="field-group" style={{gridColumn:'span 9'}}><span className="label">الجنسية:</span><div className="input"><HW>{f.country||''}</HW></div></div>
+        </div>
+      </div>
+
+      <div className="section-container">
+        <div className="section-label"><i className="fas fa-map-marker-alt"/> 2. العنوان وبيانات الاتصال</div>
+        <div className="fields-grid">
+          <div className="field-group" style={{gridColumn:'span 12'}}><span className="label">العنوان التفصيلي:</span><div className="input"><HW>{(f.country||'')+' '+(f.province||f.birthGov?'- '+(f.province||f.birthGov):'')+' '+(f.district||f.birthDistrict?'- '+(f.district||f.birthDistrict):'')+' '+(f.area||f.birthArea?'- '+(f.area||f.birthArea):'')+' '+(f.address?'- '+f.address:'')}</HW></div></div>
+          <div className="field-group" style={{gridColumn:'span 4'}}><span className="label">رقم الموبايل (1):</span><div className="input" style={{direction:'ltr',textAlign:'right'}}><HW>{f.mobile||''}</HW></div></div>
+          <div className="field-group" style={{gridColumn:'span 4'}}><span className="label">الرقم الثابت:</span><div className="input"><HW>{f.phone||''}</HW></div></div>
+          <div className="field-group" style={{gridColumn:'span 4'}}><span className="label">البريد الإلكتروني:</span><div className="input"><HW>{f.email||''}</HW></div></div>
+        </div>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+        <div className="section-container"><div className="section-label"><i className="fas fa-coins"/> 3. عملات الحساب</div><div className="checkbox-row">{['ريال يمني','ريال سعودي','دولار أمريكي','درهم إماراتي','يورو'].map(function(c){return <div key={c} className="checkbox-item"><Chk on={(f.currencies||[]).indexOf(c)>=0}/> {c}</div>;})}</div></div>
+        <div className="section-container"><div className="section-label"><i className="fas fa-headset"/> 4. وسائل طلب الخدمة</div><div className="checkbox-row">{['حضور شخصي','هاتف/SMS','تطبيق WhatsApp','بريد إلكتروني'].map(function(sv){return <div key={sv} className="checkbox-item"><Chk on={(f.services||[]).indexOf(sv)>=0||((f.services||[]).join(' ').indexOf(sv.split('/')[0])>=0)}/> {sv}</div>;})}</div></div>
+      </div>
+
+      <div className="signatures-container-p3">
+        <div className="section-label" style={{marginBottom:12}}><i className="fas fa-signature"/> 5. نماذج توقيعات العميل المعتمدة</div>
+        <div className="sig-grid">{[0,1,2].map(function(i){return <div key={i} className="page-3-sig-card"><div className="sig-card-header">توقيع معتمد ({i+1})</div>{sigs[i]&&<img src={sigs[i]} style={{maxHeight:120,maxWidth:'90%'}} alt=""/>}</div>;})}</div>
+      </div>
+      <FT pg={3}/>
+    </div><DM/></div>
+
+    {/* ===== PAGE 4: AUTH & APPROVALS (matching original template) ===== */}
+    <div className="page-a4"><WM/><div className="content-wrapper" style={{padding:'8mm 12mm',gap:14,justifyContent:'space-between'}}>
+      <div className="page-header"><div className="header-title" style={{fontSize:20}}>استمارة طلب فتح حساب (المفوضين والموافقات)</div></div>
+
+      <div>
+        <div className="section-label"><i className="fas fa-users-cog"/> 6. بيانات الأشخاص المفوضين والصلاحيات الممنوحة</div>
+        <div className="auth-table-container"><table className="auth-table">
+          <thead><tr><th style={{width:'28%'}}>بيانات المفوض</th><th style={{width:'42%'}}>الصلاحيات المحددة (ضع علامة ✓ في المربع)</th><th style={{width:'30%'}}>نموذج التوقيع</th></tr></thead>
+          <tbody>{[0,1].map(function(i){var auths=f.authorized||[];var a=auths[i]||{};return <tr key={i}>
+            <td><div style={{marginBottom:8,fontSize:12}}><strong>الاسم:</strong> <HW>{a.name||'....................................'}</HW></div><div style={{marginBottom:8,fontSize:12}}><strong>رقم الهوية:</strong> <HW>{a.id||'..............................'}</HW></div><div style={{fontSize:12}}><strong>الهاتف:</strong> <HW>{a.phone||'....................................'}</HW></div></td>
+            <td><div className="permission-grid">{['السحب / الإرسال','الاطلاع على الرصيد','طلب كشف حساب','التحويل الداخلي','التواصل الرسمي','كافة الصلاحيات'].map(function(pp){return <div key={pp} className="perm-item"><Chk on={(a.permissions||[]).indexOf(pp)>=0}/> {pp}</div>;})}</div></td>
+            <td style={{verticalAlign:'middle',textAlign:'center'}}><div style={{height:100,border:'1px dashed #999',marginTop:5,background:'#fdfdfd',borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center'}}>{a.signature&&<img src={a.signature} style={{maxHeight:80,maxWidth:'90%'}} alt=""/>}</div></td>
+          </tr>;})}</tbody>
+        </table></div>
+        <div className="legal-note"><i className="fas fa-exclamation-triangle"/> يتحمل صاحب الحساب المسؤولية القانونية الكاملة عن تعاملات المفوضين.</div>
+      </div>
+
+      <div className="approval-section">
+        <div className="section-label"><i className="fas fa-file-signature"/> 7. إقرار وموافقة العميل (صاحب الحساب)</div>
+        <div className="approval-text" style={{fontSize:13,lineHeight:1.8}}>أقر أنا الموقع أدناه بصحة كافة البيانات الواردة في هذا الطلب، وأوافق على تفويض الأشخاص المذكورين، كما أقر باطلاعي وموافقتي على الشروط والأحكام العامة لفتح الحساب والالتزام بها.</div>
+        <div style={{borderTop:'1px solid #ddd',margin:'8px 0'}}></div>
+        <div className="approval-grid">
+          <div className="field-line"><span className="lbl">الاسم الكامل (الرباعي):</span><div className="line" style={{fontSize:15}}><HW>{fullName}</HW></div></div>
+          <div className="field-line"><span className="lbl">التوقيع المعتمد:</span><div className="line">{sig&&<img src={sig} style={{height:30}} alt=""/>}</div></div>
+        </div>
+      </div>
+
+      <div className="employee-auth">
+        <div style={{fontSize:12,fontWeight:700,width:'50%'}}><i className="fas fa-user-check"/> مصادقة الموظف المختص:<div style={{fontWeight:400,marginTop:5,fontSize:11}}>تم التوقيع أمامي والمطابقة مع أصل الهوية.</div></div>
+        <div style={{display:'flex',gap:20,width:'45%'}}>
+          <div className="field-line"><span className="lbl">اسم الموظف:</span><div className="line"><HW>{(op&&op.username)||''}</HW></div></div>
+          <div className="field-line"><span className="lbl">التوقيع:</span><div className="line" style={{height:40}}></div></div>
+        </div>
+      </div>
+
+      <div className="admin-decision">
+        <div className="admin-title">قرار الإدارة (للاستخدام الرسمي فقط)</div>
+        <div className="admin-grid">
+          <div className="field-line" style={{textAlign:'center'}}><div className="line"></div><span className="lbl" style={{color:'var(--brand-purple)'}}>مدير الفرع</span></div>
+          <div className="stamp-box">ختم المنشأة<br/>(الرسمي)</div>
+          <div className="field-line" style={{textAlign:'center'}}><div className="line"></div><span className="lbl" style={{color:'var(--brand-purple)'}}>اعتماد المدير العام</span><div className="line" style={{marginTop:10,width:100,marginRight:'auto',marginLeft:'auto'}}></div><span className="lbl" style={{fontSize:9}}>التاريخ</span></div>
+        </div>
+      </div>
+
+      <FT pg={4} code="F-03-ACC"/>
+    </div><DM/></div>
+
   </div>;
 };
 
