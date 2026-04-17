@@ -36,20 +36,31 @@ try { supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY); } catch(e) { 
 
 /* ===== GOOGLE AI ===== */
 var AI_KEY = 'AIzaSyD4ri6bUb7aiJh_stdr5dX-3qcsmKzrW8s';
-var AI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+AI_KEY;
+var AI_MODELS = ['gemini-2.0-flash','gemini-1.5-flash','gemini-pro'];
+var AI_MODEL_IDX = 0;
 
 var askAI = function(systemPrompt, userMessage, callback) {
-  fetch(AI_URL, {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({
-      system_instruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ parts: [{ text: userMessage }] }],
-      generationConfig: { maxOutputTokens: 500, temperature: 0.3 }
-    })
-  }).then(function(r){return r.json();}).then(function(d){
-    var text = d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts && d.candidates[0].content.parts[0] && d.candidates[0].content.parts[0].text;
-    callback(text || 'عذراً، لم أتمكن من الرد.');
-  }).catch(function(){callback('عذراً، حدث خطأ في الاتصال.');});
+  var tryModel = function(idx) {
+    if(idx >= AI_MODELS.length) { callback('عذراً، الخدمة غير متاحة حالياً. حاول لاحقاً.'); return; }
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/'+AI_MODELS[idx]+':generateContent?key='+AI_KEY;
+    fetch(url, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ parts: [{ text: userMessage }] }],
+        generationConfig: { maxOutputTokens: 500, temperature: 0.3 }
+      })
+    }).then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    }).then(function(d){
+      if(d.error) { console.warn('AI model '+AI_MODELS[idx]+' failed:', d.error.message); tryModel(idx+1); return; }
+      var text = d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts && d.candidates[0].content.parts[0] && d.candidates[0].content.parts[0].text;
+      if(text) { AI_MODEL_IDX = idx; callback(text); }
+      else tryModel(idx+1);
+    }).catch(function(e){ console.warn('AI model '+AI_MODELS[idx]+' error:', e); tryModel(idx+1); });
+  };
+  tryModel(AI_MODEL_IDX);
 };
 
 var CLIENT_AI_PROMPT = 'أنت مساعد خدمة عملاء لشركة ابن قايد المريسي للصرافة والتحويلات. مهمتك الوحيدة مساعدة العملاء في فتح حساب جديد. أجب فقط عن: خطوات فتح الحساب، الحقول المطلوبة، المستندات اللازمة، حل مشاكل التسجيل. لا تجب عن أي شيء آخر. إذا سُئلت عن شيء خارج نطاقك قل: هذا خارج نطاق خدمتي. أجب بالعربية فقط وبإيجاز.';
@@ -144,12 +155,15 @@ var SDB = {
     return [];
   },
   login: async function(username, password) {
+    // Try Supabase first
     if(supabase) {
       try {
         var {data} = await supabase.from('admin_users').select('*').eq('username',username).eq('password_hash',password).eq('active',true).single();
-        return data || null;
-      } catch(e) {}
+        if(data) return data;
+      } catch(e) { console.warn('Supabase login failed, trying fallback'); }
     }
+    // Fallback: default admin
+    if(username === 'Eslam saeed' && password === '775122022') return {id:0, username:'Eslam saeed', role:'admin', branch:'المركز الرئيسي - الضالع', active:true};
     return null;
   },
   addUser: async function(user) {
