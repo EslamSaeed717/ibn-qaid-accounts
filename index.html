@@ -766,7 +766,7 @@ var PDFDoc=function(props){
   var WM=function(){return <div className="watermark-container"><img src={LOGO} alt="" className="watermark-img"/></div>;};
   var DM=function(){return <div className="designer-mark">Designed by Eslam Saeed</div>;};
   var Chk=function(pp){return <span className="box" style={{width:18,height:18,fontSize:14}}>{pp.on?'✓':''}</span>;};
-  var HW=function(pp){return <span style={{fontFamily:'Aref Ruqaa, Cairo, serif',color:'#1a237e',fontWeight:700,fontSize:pp.big?18:15}}>{pp.children}</span>;};
+  var HW=function(pp){return <span style={{fontFamily:'Aref Ruqaa, Cairo, serif',color:'#1a237e',fontWeight:700,fontSize:pp.big?30:22,display:'inline-block',maxWidth:'100%',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',verticalAlign:'bottom'}}>{pp.children}</span>;};
   var FT=function(pp){return <div style={{borderTop:'2px solid #e2e8f0',paddingTop:8,display:'flex',justifyContent:'space-between',fontSize:10,color:'#777',marginTop:'auto'}}><div style={{fontWeight:700}}>ابن قايد المريسي للصرافة والتحويلات</div>{pp.code&&<div>رقم النموذج: {pp.code}</div>}<div>صفحة {pp.pg} من 4</div></div>;};
 
   return <div id="pdf-output" style={{display:'flex',flexDirection:'column',alignItems:'center',background:'white',padding:0,gap:0}}>
@@ -811,8 +811,12 @@ var PDFDoc=function(props){
       <div className="declaration-section">
         <div className="declaration-text">تم الاطلاع على الشروط أعلاه والموافقة عليها</div>
         <div className="signature-row">
-          <div className="sig-block"><span className="sig-label">اسم العميل:</span><div className="sig-input"><HW>{fullName}</HW></div></div>
-          <div className="sig-block" style={{textAlign:'left'}}><span className="sig-label">التوقيع:</span><div className="sig-input">{sig&&<img src={sig} style={{height:30}} alt=""/>}</div></div>
+          <div className="sig-block"><span className="sig-label" style={{fontSize:14, fontWeight:800}}>اسم العميل:</span><div className="sig-input" style={{fontSize:22}}><HW big={true}>{fullName}</HW></div></div>
+          <div className="sig-block" style={{textAlign:'left'}}><span className="sig-label" style={{fontSize:14, fontWeight:        <div className="signature-row">
+          <div className="sig-block" style={{maxWidth:'60%', overflow:'hidden'}}><span className="sig-label" style={{fontSize:14, fontWeight:800}}>اسم العميل:</span><div className="sig-input" style={{fontSize:30}}><HW big={true}>{fullName}</HW></div></div>
+          <div className="sig-block" style={{textAlign:'left', maxWidth:'35%'}}><span className="sig-label" style={{fontSize:14, fontWeight:800}}>التوقيع:</span><div className="sig-input" style={{overflow:'hidden'}}>{sig&&<img src={sig} style={{height:71, marginTop:9, maxWidth:'100%', objectFit:'contain'}} alt=""/>}</div></div>
+        </div>
+}}>التوقيع:</span><div className="sig-input">{sig&&<img src={sig} style={{height:65, marginTop:-15, objectFit:'contain'}} alt=""/>}</div></div>
         </div>
       </div>
       <FT pg={2}/>
@@ -889,8 +893,8 @@ var PDFDoc=function(props){
         <div className="approval-text" style={{fontSize:13,lineHeight:1.8}}>أقر أنا الموقع أدناه بصحة كافة البيانات الواردة في هذا الطلب، وأوافق على تفويض الأشخاص المذكورين، كما أقر باطلاعي وموافقتي على الشروط والأحكام العامة لفتح الحساب والالتزام بها.</div>
         <div style={{borderTop:'1px solid #ddd',margin:'8px 0'}}></div>
         <div className="approval-grid">
-          <div className="field-line"><span className="lbl">الاسم الكامل (الرباعي):</span><div className="line" style={{fontSize:15}}><HW>{fullName}</HW></div></div>
-          <div className="field-line"><span className="lbl">التوقيع المعتمد:</span><div className="line">{sig&&<img src={sig} style={{height:30}} alt=""/>}</div></div>
+          <div className="field-line" style={{maxWidth:'60%', overflow:'hidden'}}><span className="lbl" style={{fontSize:14, fontWeight:800}}>الاسم الكامل (الرباعي):</span><div className="line" style={{fontSize:30}}><HW big={true}>{fullName}</HW></div></div>
+          <div className="field-line" style={{maxWidth:'35%', overflow:'hidden'}}><span className="lbl" style={{fontSize:14, fontWeight:800}}>التوقيع المعتمد:</span><div className="line" style={{justifyContent:'center'}}>{sig&&<img src={sig} style={{height:71, marginTop:9, maxWidth:'100%', objectFit:'contain'}} alt=""/>}</div></div>
         </div>
       </div>
 
