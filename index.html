@@ -912,7 +912,7 @@ var PDFDoc=function(props){
         <div style={{borderTop:'1px solid #ddd',margin:'8px 0'}}></div>
         <div className="approval-grid">
           <div className="field-line" style={{maxWidth:'60%'}}><span className="lbl" style={{fontSize:14, fontWeight:800}}>الاسم الكامل (الرباعي):</span><div className="line" style={{fontSize:30, minHeight:45, paddingBottom:5}}><HW big={true}>{fullName}</HW></div></div>
-          <div className="field-line" style={{maxWidth:'35%', alignItems:'flex-end'}}><span className="lbl" style={{fontSize:14, fontWeight:800, textAlign:'center', lineHeight:1.3}}>التوقيع<br/>المعتمد :</span><div className="line" style={{justifyContent:'center', minHeight:45, paddingBottom:0}}>{sig&&<img src={sig} style={{height:71, marginTop:9, maxWidth:'100%', objectFit:'contain'}} alt=""/>}</div></div>
+          <div className="field-line" style={{maxWidth:'35%', alignItems:'flex-start'}}><span className="lbl" style={{fontSize:14, fontWeight:800, lineHeight:1.5}}>التوقيع :<br/>المعتمد :</span><div className="line" style={{justifyContent:'center', width:'100%', minHeight:45, paddingBottom:0}}>{sig&&<img src={sig} style={{height:71, marginTop:9, maxWidth:'100%', objectFit:'contain'}} alt=""/>}</div></div>
         </div>
       </div>
 
