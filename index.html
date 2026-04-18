@@ -811,8 +811,8 @@ var PDFDoc=function(props){
       <div className="declaration-section">
         <div className="declaration-text">تم الاطلاع على الشروط أعلاه والموافقة عليها</div>
         <div className="signature-row">
-          <div className="sig-block"><span className="sig-label">اسم العميل:</span><div className="sig-input"><HW>{fullName}</HW></div></div>
-          <div className="sig-block" style={{textAlign:'left'}}><span className="sig-label">التوقيع:</span><div className="sig-input">{sig&&<img src={sig} style={{height:30}} alt=""/>}</div></div>
+          <div className="sig-block"><span className="sig-label" style={{fontSize:14, fontWeight:800}}>اسم العميل:</span><div className="sig-input" style={{fontSize:22}}><HW big={true}>{fullName}</HW></div></div>
+          <div className="sig-block" style={{textAlign:'left'}}><span className="sig-label" style={{fontSize:14, fontWeight:800}}>التوقيع:</span><div className="sig-input">{sig&&<img src={sig} style={{height:65, marginTop:-15, objectFit:'contain'}} alt=""/>}</div></div>
         </div>
       </div>
       <FT pg={2}/>
@@ -889,8 +889,8 @@ var PDFDoc=function(props){
         <div className="approval-text" style={{fontSize:13,lineHeight:1.8}}>أقر أنا الموقع أدناه بصحة كافة البيانات الواردة في هذا الطلب، وأوافق على تفويض الأشخاص المذكورين، كما أقر باطلاعي وموافقتي على الشروط والأحكام العامة لفتح الحساب والالتزام بها.</div>
         <div style={{borderTop:'1px solid #ddd',margin:'8px 0'}}></div>
         <div className="approval-grid">
-          <div className="field-line"><span className="lbl">الاسم الكامل (الرباعي):</span><div className="line" style={{fontSize:15}}><HW>{fullName}</HW></div></div>
-          <div className="field-line"><span className="lbl">التوقيع المعتمد:</span><div className="line">{sig&&<img src={sig} style={{height:30}} alt=""/>}</div></div>
+          <div className="field-line"><span className="lbl" style={{fontSize:14, fontWeight:800}}>الاسم الكامل (الرباعي):</span><div className="line" style={{fontSize:22}}><HW big={true}>{fullName}</HW></div></div>
+          <div className="field-line"><span className="lbl" style={{fontSize:14, fontWeight:800}}>التوقيع المعتمد:</span><div className="line">{sig&&<img src={sig} style={{height:65, marginTop:-20, objectFit:'contain'}} alt=""/>}</div></div>
         </div>
       </div>
 
