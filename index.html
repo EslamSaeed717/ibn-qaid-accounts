@@ -146,49 +146,66 @@ var SDB = {
   },
   // Submissions
   submitForm: async function(data) {
+    console.log('🔵 [1/6] submitForm START');
     // Ensure Supabase is ready
-    if(!supabase) initSupabase();
+    if(!supabase) { console.log('🟡 Supabase not ready, initializing...'); initSupabase(); }
     if(!supabase) {
-      console.error('❌ Supabase not available');
-      return {success:false, error:'لا يوجد اتصال بالخادم. يرجى فتح الرابط عبر Chrome أو متصفح أساسي والمحاولة مرة أخرى.'};
+      console.error('❌ [FATAL] Supabase client NOT initialized');
+      return {success:false, error:'مكتبة Supabase لم تُحمَّل. تحقق من الإنترنت.'};
     }
+    console.log('🔵 [2/6] Supabase client OK');
+
     try {
       // Generate ref number
       var ref = null;
       try {
-        var {data:refData,error:refErr} = await supabase.rpc('generate_ref_number');
-        if(refErr) console.warn('Ref generation error:', refErr);
-        ref = refData;
-      } catch(e) { console.warn('Ref RPC failed:', e); }
-      if(!ref) ref = new Date().getFullYear()+'-'+String(Date.now()).slice(-4);
+        var refResult = await supabase.rpc('generate_ref_number');
+        console.log('🔵 [3/6] RPC result:', refResult);
+        if(refResult.error) {
+          console.warn('⚠ RPC error:', refResult.error.message);
+        } else {
+          ref = refResult.data;
+        }
+      } catch(e) { console.warn('⚠ RPC exception:', e.message); }
+      if(!ref) {
+        ref = new Date().getFullYear()+'-'+String(Date.now()).slice(-4);
+        console.log('🟡 Using fallback ref:', ref);
+      } else {
+        console.log('✅ Ref from DB:', ref);
+      }
 
-      // Compress signatures and photos to prevent size issues
-      // Returns Promise that resolves with compressed base64
+      // Compress images - with proper async image loading
       var compressBase64 = function(b64) {
         return new Promise(function(resolve) {
-          if(!b64) { resolve(null); return; }
+          if(!b64 || typeof b64 !== 'string') { resolve(null); return; }
           if(b64.length < 80000) { resolve(b64); return; }
           try {
             var img = new Image();
+            var timer = setTimeout(function(){ resolve(b64); }, 5000); // Timeout 5s
             img.onload = function() {
+              clearTimeout(timer);
               try {
                 var canvas = document.createElement('canvas');
                 var maxW = 500, maxH = 400;
-                var w = img.width || 500, h = img.height || 400;
+                var w = img.naturalWidth || img.width || 500;
+                var h = img.naturalHeight || img.height || 400;
                 if(w > maxW) { h = h * maxW / w; w = maxW; }
                 if(h > maxH) { w = w * maxH / h; h = maxH; }
                 canvas.width = w; canvas.height = h;
-                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                resolve(canvas.toDataURL('image/jpeg', 0.5));
-              } catch(e) { console.warn('Compress error:', e); resolve(b64); }
+                var ctx = canvas.getContext('2d');
+                ctx.fillStyle = 'white'; ctx.fillRect(0,0,w,h);
+                ctx.drawImage(img, 0, 0, w, h);
+                var out = canvas.toDataURL('image/jpeg', 0.5);
+                resolve(out && out.length > 100 ? out : b64);
+              } catch(e) { console.warn('Canvas error:', e.message); resolve(b64); }
             };
-            img.onerror = function() { resolve(b64); };
+            img.onerror = function() { clearTimeout(timer); resolve(b64); };
             img.src = b64;
           } catch(e) { resolve(b64); }
         });
       };
 
-      // Compress all images in parallel
+      console.log('🔵 [4/6] Compressing images...');
       var photoKeys = data.idPhotos ? Object.keys(data.idPhotos) : [];
       var compressedPhotos = {};
       for(var pk = 0; pk < photoKeys.length; pk++) {
@@ -200,31 +217,76 @@ var SDB = {
         compressedSigs.push(await compressBase64(sigArr[si]));
       }
       var compressedMainSig = await compressBase64(data.mainSignature);
+      console.log('✅ Images compressed');
 
+      // Build clean row - ONLY fields that exist in DB
       var row = {
-        ref_number: ref, status:'pending', account_type:data.accountType,
-        names:data.names, nickname:data.nickname, full_name:data.fullName,
-        business_name:data.businessName||null, business_type:data.businessType||null, legal_form:data.legalForm||null,
-        id_type:data.idType, id_number:data.idNumber, id_issue_date:data.idIssueDate,
-        id_expiry:data.idExpiry, id_issue_place:data.idIssuePlace, birth_date:data.birthDate,
-        country:data.country, province:data.birthGov, district:data.birthDistrict, area:data.birthArea||null, address:data.address||null,
-        mobile:data.mobile, phone:data.phone||null, email:data.email||null,
-        mobile_type:data.mobileType, country_code:data.countryCode, branch:data.branch,
-        currencies:data.currencies, services:data.services, authorized:data.authorized,
-        main_signature:compressedMainSig, sample_signatures:compressedSigs, id_photos:compressedPhotos
+        ref_number: ref,
+        status: 'pending',
+        account_type: data.accountType || 'شخصي',
+        names: data.names || [],
+        nickname: data.nickname || '',
+        full_name: data.fullName || '',
+        business_name: data.businessName || null,
+        business_type: data.businessType || null,
+        legal_form: data.legalForm || null,
+        id_type: data.idType || '',
+        id_number: data.idNumber || '',
+        id_issue_date: data.idIssueDate || null,
+        id_expiry: data.idExpiry || null,
+        id_issue_place: data.idIssuePlace || '',
+        birth_date: data.birthDate || null,
+        country: data.country || 'اليمن',
+        province: data.birthGov || '',
+        district: data.birthDistrict || null,
+        area: data.birthArea || null,
+        address: data.address || null,
+        mobile: data.mobile || '',
+        phone: data.phone || null,
+        email: data.email || null,
+        mobile_type: data.mobileType || 'yemeni',
+        country_code: data.countryCode || '+967',
+        branch: data.branch || '',
+        currencies: data.currencies || [],
+        services: data.services || [],
+        authorized: (data.authorized && data.authorized[0] && data.authorized[0].name) ? data.authorized : [],
+        main_signature: compressedMainSig,
+        sample_signatures: compressedSigs,
+        id_photos: compressedPhotos
       };
 
-      console.log('📤 Submitting to Supabase, ref:', ref);
-      var {data:inserted, error} = await supabase.from('submissions').insert([row]).select().single();
-      if(error) {
-        console.error('❌ Supabase insert error:', error.message, error.details, error.hint);
-        return {success:false, error:'فشل حفظ الطلب: ' + (error.message||'خطأ غير معروف') + '. يرجى المحاولة مرة أخرى.'};
+      // Calculate size
+      var rowStr = JSON.stringify(row);
+      console.log('🔵 [5/6] Row size:', Math.round(rowStr.length/1024), 'KB');
+      if(rowStr.length > 5000000) {
+        return {success:false, error:'حجم البيانات كبير جداً ('+Math.round(rowStr.length/1024)+'KB). جرّب صور أصغر.'};
       }
-      console.log('✅ Supabase insert success, ref:', ref);
-      return {success:true, ref:ref, data:inserted};
+
+      console.log('📤 Sending to Supabase...');
+      var insertResult = await supabase.from('submissions').insert([row]).select();
+      console.log('🔵 [6/6] Insert response:', insertResult);
+
+      if(insertResult.error) {
+        var errMsg = insertResult.error.message || 'خطأ غير معروف';
+        var errDetails = insertResult.error.details || '';
+        var errHint = insertResult.error.hint || '';
+        var errCode = insertResult.error.code || '';
+        console.error('❌ INSERT ERROR:', {message:errMsg, details:errDetails, hint:errHint, code:errCode});
+        return {success:false, error:'خطأ DB: ' + errMsg + (errDetails?' | '+errDetails:'') + (errCode?' [code:'+errCode+']':'')};
+      }
+
+      if(!insertResult.data || insertResult.data.length === 0) {
+        console.error('❌ Insert returned no data (likely RLS block)');
+        return {success:false, error:'لم يتم إدراج البيانات. تحقق من سياسات RLS في Supabase.'};
+      }
+
+      console.log('✅✅✅ SUBMISSION SUCCESS, ref:', ref);
+      return {success:true, ref:ref, data:insertResult.data[0]};
+
     } catch(e) {
-      console.error('❌ Submit exception:', e);
-      return {success:false, error:'حدث خطأ غير متوقع. يرجى فتح الرابط عبر Chrome والمحاولة مرة أخرى.'};
+      var errStr = e && e.message ? e.message : (e && e.toString ? e.toString() : 'خطأ غير محدد');
+      console.error('❌ EXCEPTION in submitForm:', e);
+      return {success:false, error:'استثناء: ' + errStr};
     }
   },
   getSubmissions: async function() {
@@ -729,22 +791,26 @@ var ClientForm=function(p){
     var fullName=allNames.concat([fd.nickname]).filter(Boolean).join(' ');
     var finalMobile=fd.mobileType==='yemeni'?'+967'+fd.mobile:fd.countryCode+fd.mobile;
     var data=Object.assign({},fd,{fullName:fullName,mobile:finalMobile,names:allNames});
+    console.log('🚀 Starting submission...');
     SDB.submitForm(data).then(function(result){
+      console.log('Submission result:', result);
       if(result.success){
-        // SUCCESS: Supabase confirmed
         setSubData(Object.assign({},data,{ref:result.ref}));
         setSubmitted(true);setSending(false);
         try{localStorage.removeItem('iq4_draft');}catch(e){}
-        // Send EmailJS ONLY after Supabase success
         sendEmailNotification(Object.assign({},data,{ref:result.ref}));
       }else{
-        // FAIL: Supabase rejected - keep draft, show error
         setSending(false);
-        setToast({msg:result.error||'فشل إرسال الطلب. يرجى فتح الرابط في Chrome والمحاولة مرة أخرى.',type:'error'});
+        var realErr = result.error || 'سبب غير معروف';
+        alert('❌ فشل الإرسال:\n\n' + realErr + '\n\nافتح Console (F12) لمزيد من التفاصيل.');
+        setToast({msg:realErr,type:'error'});
       }
     }).catch(function(e){
       setSending(false);
-      setToast({msg:'خطأ في الاتصال بالخادم. يرجى التأكد من الإنترنت وفتح الرابط في Chrome.',type:'error'});
+      var errMsg = e && e.message ? e.message : String(e);
+      console.error('❌ Catch error:', e);
+      alert('❌ خطأ في الاتصال:\n\n' + errMsg);
+      setToast({msg:'خطأ: '+errMsg,type:'error'});
     });
   };
 
