@@ -146,43 +146,77 @@ var SDB = {
   },
   // Submissions
   submitForm: async function(data) {
-    if(supabase) {
-      try {
-        var {data:refData} = await supabase.rpc('generate_ref_number');
-        var ref = refData || (new Date().getFullYear()+'-'+String(Math.floor(Math.random()*9999)).padStart(4,'0'));
-        var row = {
-          ref_number: ref, status:'pending', account_type:data.accountType,
-          names:data.names, nickname:data.nickname, full_name:data.fullName,
-          business_name:data.businessName, business_type:data.businessType, legal_form:data.legalForm,
-          id_type:data.idType, id_number:data.idNumber, id_issue_date:data.idIssueDate,
-          id_expiry:data.idExpiry, id_issue_place:data.idIssuePlace, birth_date:data.birthDate,
-          country:data.country, province:data.birthGov, district:data.birthDistrict, area:data.birthArea, address:data.address,
-          mobile:data.mobile, phone:data.phone, email:data.email,
-          mobile_type:data.mobileType, country_code:data.countryCode, branch:data.branch,
-          currencies:data.currencies, services:data.services, authorized:data.authorized,
-          main_signature:data.mainSignature, sample_signatures:data.sampleSignatures, id_photos:data.idPhotos
-        };
-        var {data:inserted, error} = await supabase.from('submissions').insert([row]).select().single();
-        if(error) throw error;
-        return {success:true, ref:ref, data:inserted};
-      } catch(e) { console.error('Supabase submit error:', e); }
+    // Ensure Supabase is ready
+    if(!supabase) initSupabase();
+    if(!supabase) {
+      console.error('❌ Supabase not available');
+      return {success:false, error:'لا يوجد اتصال بالخادم. يرجى فتح الرابط عبر Chrome أو متصفح أساسي والمحاولة مرة أخرى.'};
     }
-    // Fallback to localStorage
-    var ref = new Date().getFullYear()+'-'+String(Math.floor(Math.random()*9999)).padStart(4,'0');
-    var subs = JSON.parse(localStorage.getItem('iq4_subs')||'[]');
-    var entry = Object.assign({}, data, {id:ref, ref_number:ref, status:'pending', submittedAt:new Date().toISOString()});
-    subs.push(entry);
-    localStorage.setItem('iq4_subs', JSON.stringify(subs));
-    return {success:true, ref:ref, data:entry};
+    try {
+      // Generate ref number
+      var ref = null;
+      try {
+        var {data:refData,error:refErr} = await supabase.rpc('generate_ref_number');
+        if(refErr) console.warn('Ref generation error:', refErr);
+        ref = refData;
+      } catch(e) { console.warn('Ref RPC failed:', e); }
+      if(!ref) ref = new Date().getFullYear()+'-'+String(Date.now()).slice(-4);
+
+      // Compress signatures and photos to prevent size issues
+      var compressBase64 = function(b64) {
+        if(!b64 || b64.length < 50000) return b64;
+        try {
+          var canvas = document.createElement('canvas');
+          var img = new Image(); img.src = b64;
+          canvas.width = Math.min(img.width||400, 400);
+          canvas.height = Math.min(img.height||300, 300);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          return canvas.toDataURL('image/jpeg', 0.4);
+        } catch(e) { return b64; }
+      };
+
+      var compressedPhotos = {};
+      if(data.idPhotos) { Object.keys(data.idPhotos).forEach(function(k) { compressedPhotos[k] = compressBase64(data.idPhotos[k]); }); }
+      var compressedSigs = (data.sampleSignatures||[]).map(function(s) { return compressBase64(s); });
+      var compressedMainSig = compressBase64(data.mainSignature);
+
+      var row = {
+        ref_number: ref, status:'pending', account_type:data.accountType,
+        names:data.names, nickname:data.nickname, full_name:data.fullName,
+        business_name:data.businessName||null, business_type:data.businessType||null, legal_form:data.legalForm||null,
+        id_type:data.idType, id_number:data.idNumber, id_issue_date:data.idIssueDate,
+        id_expiry:data.idExpiry, id_issue_place:data.idIssuePlace, birth_date:data.birthDate,
+        country:data.country, province:data.birthGov, district:data.birthDistrict, area:data.birthArea||null, address:data.address||null,
+        mobile:data.mobile, phone:data.phone||null, email:data.email||null,
+        mobile_type:data.mobileType, country_code:data.countryCode, branch:data.branch,
+        currencies:data.currencies, services:data.services, authorized:data.authorized,
+        main_signature:compressedMainSig, sample_signatures:compressedSigs, id_photos:compressedPhotos
+      };
+
+      console.log('📤 Submitting to Supabase, ref:', ref);
+      var {data:inserted, error} = await supabase.from('submissions').insert([row]).select().single();
+      if(error) {
+        console.error('❌ Supabase insert error:', error.message, error.details, error.hint);
+        return {success:false, error:'فشل حفظ الطلب: ' + (error.message||'خطأ غير معروف') + '. يرجى المحاولة مرة أخرى.'};
+      }
+      console.log('✅ Supabase insert success, ref:', ref);
+      return {success:true, ref:ref, data:inserted};
+    } catch(e) {
+      console.error('❌ Submit exception:', e);
+      return {success:false, error:'حدث خطأ غير متوقع. يرجى فتح الرابط عبر Chrome والمحاولة مرة أخرى.'};
+    }
   },
   getSubmissions: async function() {
+    if(!supabase) initSupabase();
     if(supabase) {
       try {
-        var {data} = await supabase.from('submissions').select('*').order('submitted_at',{ascending:false});
+        var {data,error} = await supabase.from('submissions').select('*').order('submitted_at',{ascending:false});
+        if(error) { console.error('❌ getSubmissions error:', error); return []; }
         return data || [];
-      } catch(e) {}
+      } catch(e) { console.error('❌ getSubmissions exception:', e); return []; }
     }
-    return JSON.parse(localStorage.getItem('iq4_subs')||'[]');
+    console.warn('⚠ Supabase unavailable for getSubmissions');
+    return [];
   },
   updateSubmission: async function(ref, updates) {
     if(supabase) {
@@ -493,10 +527,20 @@ var AdminPanel=function(p){
   var stats=useMemo(function(){return{total:subs.length,pending:subs.filter(function(s){return s.status==='pending';}).length,approved:subs.filter(function(s){return s.status==='approved';}).length,rejected:subs.filter(function(s){return s.status==='rejected';}).length};},[subs]);
 
   var approveOrReject=function(ref,status){
-    SDB.updateSubmission(ref,{status:status,reviewed_by:user.username,review_date:isoDate()}).then(function(){
-      setSubs(function(prev){return prev.map(function(s){return(s.ref_number||s.id)===ref?Object.assign({},s,{status:status}):s;});});
-      msg(status==='approved'?'✅ تمت الموافقة':'❌ تم الرفض',status==='approved'?'success':'error');
-    });
+    if(status==='approved'){
+      var accNum=prompt('أدخل رقم الحساب الحقيقي في النظام:');
+      if(!accNum||!accNum.trim()){msg('يجب إدخال رقم الحساب الحقيقي للموافقة','error');return;}
+      SDB.updateSubmission(ref,{status:'approved',reviewed_by:user.username,review_date:isoDate(),real_account_number:accNum.trim()}).then(function(){
+        setSubs(function(prev){return prev.map(function(s){return(s.ref_number||s.id)===ref?Object.assign({},s,{status:'approved',real_account_number:accNum.trim(),reviewed_by:user.username}):s;});});
+        msg('✅ تمت الموافقة — رقم الحساب: '+accNum.trim());
+      });
+    }else{
+      var reason=prompt('سبب الرفض (اختياري):');
+      SDB.updateSubmission(ref,{status:'rejected',reviewed_by:user.username,review_date:isoDate(),admin_note:reason||''}).then(function(){
+        setSubs(function(prev){return prev.map(function(s){return(s.ref_number||s.id)===ref?Object.assign({},s,{status:'rejected',reviewed_by:user.username}):s;});});
+        msg('❌ تم الرفض','error');
+      });
+    }
   };
 
   var printSub=function(sub){setShowPDF(sub);};
@@ -529,7 +573,7 @@ var AdminPanel=function(p){
           {filteredSubs.length===0?<div style={{textAlign:'center',color:'#94a3b8',padding:40}}>📭 لا توجد طلبات</div>:
           filteredSubs.map(function(s){var ref=s.ref_number||s.id;var name=s.full_name||s.fullName||'—';return <div key={ref} style={{border:'1px solid #e2e8f0',borderRadius:14,padding:16,background:'#fafafa',marginBottom:10}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:8}}>
-              <div><h4 style={{margin:0,fontSize:15,fontWeight:800,color:B.purple}}>{name}</h4><p style={{margin:'3px 0',fontSize:12,color:'#64748b'}}>{s.id_type||s.idType}: {s.id_number||s.idNumber} | {s.mobile} | {s.branch||'—'}</p><p style={{margin:0,fontSize:11,color:'#16a34a',fontWeight:700}}>المرجع: {ref}</p></div>
+              <div><h4 style={{margin:0,fontSize:15,fontWeight:800,color:B.purple}}>{name}</h4><p style={{margin:'3px 0',fontSize:12,color:'#64748b'}}>{s.id_type||s.idType}: {s.id_number||s.idNumber} | {s.mobile} | {s.branch||'—'}</p><p style={{margin:0,fontSize:11,color:'#16a34a',fontWeight:700}}>المرجع: {ref}{s.real_account_number&&<span style={{color:B.purple,marginRight:10}}> | رقم الحساب: {s.real_account_number}</span>}</p></div>
               <span className={'badge '+(s.status==='pending'?'badge-yellow':s.status==='approved'?'badge-green':'badge-red')}>{s.status==='pending'?'⏳':s.status==='approved'?'✅':'❌'} {s.status}</span>
             </div>
             <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:8}}>
@@ -666,15 +710,35 @@ var ClientForm=function(p){
     var data=Object.assign({},fd,{fullName:fullName,mobile:finalMobile,names:allNames});
     SDB.submitForm(data).then(function(result){
       if(result.success){
+        // SUCCESS: Supabase confirmed
         setSubData(Object.assign({},data,{ref:result.ref}));
         setSubmitted(true);setSending(false);
         try{localStorage.removeItem('iq4_draft');}catch(e){}
+        // Send EmailJS ONLY after Supabase success
         sendEmailNotification(Object.assign({},data,{ref:result.ref}));
-      }else{setToast({msg:'حدث خطأ',type:'error'});setSending(false);}
-    }).catch(function(){setToast({msg:'خطأ في الاتصال',type:'error'});setSending(false);});
+      }else{
+        // FAIL: Supabase rejected - keep draft, show error
+        setSending(false);
+        setToast({msg:result.error||'فشل إرسال الطلب. يرجى فتح الرابط في Chrome والمحاولة مرة أخرى.',type:'error'});
+      }
+    }).catch(function(e){
+      setSending(false);
+      setToast({msg:'خطأ في الاتصال بالخادم. يرجى التأكد من الإنترنت وفتح الرابط في Chrome.',type:'error'});
+    });
   };
 
-  var getPhotoConfig=function(){if(fd.idType.indexOf('شخصية')>=0||fd.idType.indexOf('ذكية')>=0)return[{id:'front',label:'الوجه الأمامي'},{id:'back',label:'الوجه الخلفي'}];if(fd.idType.indexOf('جواز')>=0)return[{id:'passport',label:'صفحة البيانات'}];return[{id:'main',label:'صورة الهوية'}];};
+  var getPhotoConfig=function(){
+    var cfg=[];
+    if(fd.idType.indexOf('شخصية')>=0||fd.idType.indexOf('ذكية')>=0){
+      cfg=[{id:'front',label:'الوجه الأمامي للهوية',capture:'environment'},{id:'back',label:'الوجه الخلفي للهوية',capture:'environment'}];
+    }else if(fd.idType.indexOf('جواز')>=0){
+      cfg=[{id:'passport',label:'صفحة البيانات',capture:'environment'}];
+    }else{
+      cfg=[{id:'main',label:'صورة الهوية',capture:'environment'}];
+    }
+    cfg.push({id:'selfie',label:'📸 صورة سيلفي مباشرة',capture:'user',selfieOnly:true});
+    return cfg;
+  };
   var handlePhoto=function(id,file){if(!file)return;var r=new FileReader();r.onload=function(ev){var img=new Image();img.onload=function(){var cvs=document.createElement('canvas');var w=img.width,h=img.height;if(w>800){h*=800/w;w=800;}cvs.width=w;cvs.height=h;cvs.getContext('2d').drawImage(img,0,0,w,h);setFd(function(prev){var n=Object.assign({},prev);n.idPhotos=Object.assign({},prev.idPhotos);n.idPhotos[id]=cvs.toDataURL('image/jpeg',0.6);return n;});};img.src=ev.target.result;};r.readAsDataURL(file);};
   var updateName=function(i,v){var n=fd.names.slice();n[i]=v;uf('names',n);setErrs(function(prev){var e=Object.assign({},prev);delete e['name_'+i];return e;});};
 
@@ -744,7 +808,7 @@ var ClientForm=function(p){
           {/* STEP 6 */}
           {step===6&&<div className="fade-in"><h4 style={{fontSize:16,fontWeight:800,color:B.purple,marginBottom:12}}>نماذج التوقيعات <span style={{color:'#dc2626'}}>*</span></h4><div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10}}>{[0,1,2].map(function(i){return <SigBox key={i} onClick={function(){setActiveSig(i);}} label={'نموذج '+(i+1)} val={fd.sampleSignatures[i]}/>;})}</div>{errs.sampleSignatures&&<p style={{color:'#dc2626',fontSize:12,marginTop:8}}>⚠ {errs.sampleSignatures}</p>}<h4 style={{fontSize:16,fontWeight:900,color:B.purple,margin:'20px 0 12px'}}>التوقيع الرئيسي <span style={{color:'#dc2626'}}>*</span></h4><SigBox onClick={function(){setActiveSig('main');}} label="اضغط للتوقيع" val={fd.mainSignature}/>{errs.mainSignature&&<p style={{color:'#dc2626',fontSize:12,marginTop:8}}>⚠ {errs.mainSignature}</p>}</div>}
           {/* STEP 7 */}
-          {step===7&&<div className="fade-in"><h4 style={{fontSize:16,fontWeight:800,color:B.purple,marginBottom:16}}>📷 المرفقات ({fd.idType})</h4><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>{getPhotoConfig().map(function(conf){return <div key={conf.id} style={{border:'2px dashed '+(fd.idPhotos[conf.id]?'#16a34a':'#cbd5e1'),borderRadius:16,padding:14,textAlign:'center'}}>{fd.idPhotos[conf.id]?<div><img src={fd.idPhotos[conf.id]} style={{width:'100%',height:120,objectFit:'contain',borderRadius:8}} alt=""/><button onClick={function(){var n=Object.assign({},fd.idPhotos);delete n[conf.id];uf('idPhotos',n);}} style={{marginTop:8,padding:'6px 14px',background:'#fef2f2',color:'#dc2626',border:'none',borderRadius:8,fontSize:12}}>🗑 إزالة</button></div>:<div><i className="fas fa-id-card" style={{fontSize:32,color:'#94a3b8'}}/><p style={{fontSize:13,fontWeight:700,color:'#64748b',marginBottom:8}}>{conf.label}</p><div style={{display:'flex',gap:6,justifyContent:'center'}}><label style={{padding:'8px 14px',background:B.purple,color:'white',borderRadius:8,fontSize:12,fontWeight:700,cursor:'pointer'}}>📁 رفع<input type="file" accept="image/*" onChange={function(e){handlePhoto(conf.id,e.target.files[0]);}} style={{display:'none'}}/></label><label style={{padding:'8px 14px',background:B.orange,color:'white',borderRadius:8,fontSize:12,fontWeight:700,cursor:'pointer'}}>📷 كاميرا<input type="file" accept="image/*" capture="environment" onChange={function(e){handlePhoto(conf.id,e.target.files[0]);}} style={{display:'none'}}/></label></div></div>}</div>;})}</div>{errs.photos&&<p style={{color:'#dc2626',marginTop:10}}>⚠ {errs.photos}</p>}<button onClick={submitForm} disabled={sending} style={{width:'100%',marginTop:20,padding:16,background:sending?'#94a3b8':'#16a34a',color:'white',border:'none',borderRadius:14,fontSize:17,fontWeight:900}}>{sending?'جارٍ الإرسال...':'🚀 تأكيد وإرسال الطلب'}</button></div>}
+          {step===7&&<div className="fade-in"><h4 style={{fontSize:16,fontWeight:800,color:B.purple,marginBottom:16}}>📷 المرفقات ({fd.idType})</h4><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>{getPhotoConfig().map(function(conf){return <div key={conf.id} style={{border:'2px dashed '+(fd.idPhotos[conf.id]?'#16a34a':'#cbd5e1'),borderRadius:16,padding:14,textAlign:'center',background:conf.selfieOnly?'#fffbeb':'white'}}>{fd.idPhotos[conf.id]?<div><img src={fd.idPhotos[conf.id]} style={{width:'100%',height:120,objectFit:'contain',borderRadius:conf.selfieOnly?'50%':8}} alt=""/><button onClick={function(){var n=Object.assign({},fd.idPhotos);delete n[conf.id];uf('idPhotos',n);}} style={{marginTop:8,padding:'6px 14px',background:'#fef2f2',color:'#dc2626',border:'none',borderRadius:8,fontSize:12}}>🗑 إعادة التقاط</button></div>:<div><i className={conf.selfieOnly?'fas fa-camera':'fas fa-id-card'} style={{fontSize:32,color:conf.selfieOnly?B.orange:'#94a3b8'}}/><p style={{fontSize:13,fontWeight:700,color:'#64748b',marginBottom:8}}>{conf.label}</p><div style={{display:'flex',gap:6,justifyContent:'center'}}>{conf.selfieOnly?<label style={{padding:'10px 20px',background:B.orange,color:'white',borderRadius:10,fontSize:13,fontWeight:800,cursor:'pointer'}}>📸 التقاط سيلفي<input type="file" accept="image/*" capture="user" onChange={function(e){handlePhoto(conf.id,e.target.files[0]);}} style={{display:'none'}}/></label>:<><label style={{padding:'8px 14px',background:B.purple,color:'white',borderRadius:8,fontSize:12,fontWeight:700,cursor:'pointer'}}>📁 رفع<input type="file" accept="image/*" onChange={function(e){handlePhoto(conf.id,e.target.files[0]);}} style={{display:'none'}}/></label><label style={{padding:'8px 14px',background:B.orange,color:'white',borderRadius:8,fontSize:12,fontWeight:700,cursor:'pointer'}}>📷 كاميرا<input type="file" accept="image/*" capture={conf.capture||'environment'} onChange={function(e){handlePhoto(conf.id,e.target.files[0]);}} style={{display:'none'}}/></label></>}</div></div>}</div>;})}</div>{errs.photos&&<p style={{color:'#dc2626',marginTop:10}}>⚠ {errs.photos}</p>}<button onClick={submitForm} disabled={sending} style={{width:'100%',marginTop:20,padding:16,background:sending?'#94a3b8':'#16a34a',color:'white',border:'none',borderRadius:14,fontSize:17,fontWeight:900}}>{sending?'جارٍ الإرسال...':'🚀 تأكيد وإرسال الطلب'}</button></div>}
         </div>
         {step<T&&<div className="card-footer">{step>1&&<button onClick={function(){setErrs({});setStep(step-1);}} style={{padding:'12px 16px',background:'#f1f5f9',color:'#64748b',border:'none',borderRadius:12,fontSize:13,fontWeight:700}}>→ السابق</button>}<button onClick={nx} className={shakeBtn?'shake':''} disabled={step===1&&!fd.termsAccepted} style={{flex:1,padding:14,background:(step===1&&!fd.termsAccepted)?'#cbd5e1':B.purple,color:'white',border:'none',borderRadius:12,fontSize:15,fontWeight:900}}>{step===6?'المرفقات ←':'التالي ←'}</button></div>}
         <div style={{background:'#fafafa',padding:'10px 24px',display:'flex',justifyContent:'space-between',fontSize:9,fontWeight:700,color:'#94a3b8',borderTop:'1px solid #f1f5f9'}}><span>🔒 آمن ومشفر</span><span>ابن قايد المريسي © {new Date().getFullYear()}</span></div>

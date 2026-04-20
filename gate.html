@@ -18,12 +18,39 @@
         <div id="icon" class="hidden mx-auto mb-6 w-16 h-16 flex items-center justify-center rounded-full"></div>
         
         <h1 id="title" class="text-2xl font-bold mb-3 text-white">جاري فحص التشفير...</h1>
-        <p id="message" class="text-gray-400 text-sm leading-relaxed">بوابة نظام الحسابات V3.1 - ابن قايد المريسي</p>
+        <p id="message" class="text-gray-400 text-sm leading-relaxed">بوابة نظام الحسابات V4.0 - ابن قايد المريسي</p>
+        
+        <div id="webview-warning" class="hidden mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-right">
+            <p class="text-yellow-400 text-sm font-bold mb-3">⚠️ يبدو أنك تستخدم متصفحاً مدمجاً داخل تطبيق</p>
+            <p class="text-yellow-300/70 text-xs mb-4">لضمان عمل النظام بشكل صحيح، افتح الرابط في متصفح Chrome أو Safari</p>
+            <button id="copy-btn" onclick="copyLink()" class="w-full py-3 px-4 bg-yellow-500/20 border border-yellow-500/40 rounded-lg text-yellow-400 font-bold text-sm">📋 نسخ الرابط</button>
+            <button onclick="openInBrowser()" class="w-full mt-2 py-3 px-4 bg-blue-500/20 border border-blue-500/40 rounded-lg text-blue-400 font-bold text-sm">🌐 فتح في Chrome</button>
+        </div>
     </div>
 
     <script>
-        // مفتاح التشفير السري (يجب أن يتطابق مع المولد)
         const SECRET_KEY = "MURISI_V3";
+        var targetUrl = '';
+
+        function isWebView() {
+            var ua = navigator.userAgent || '';
+            return /FBAN|FBAV|Instagram|Twitter|Line|WhatsApp|Snapchat|TikTok|wv|WebView/i.test(ua);
+        }
+
+        function copyLink() {
+            var url = targetUrl || window.location.href;
+            if(navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(function() {
+                    document.getElementById('copy-btn').innerHTML = '✅ تم النسخ!';
+                    setTimeout(function() { document.getElementById('copy-btn').innerHTML = '📋 نسخ الرابط'; }, 3000);
+                }).catch(function() { prompt('انسخ:', url); });
+            } else { prompt('انسخ:', url); }
+        }
+
+        function openInBrowser() {
+            var url = targetUrl || window.location.href;
+            window.open('intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end', '_blank');
+        }
 
         function decipherToken(token) {
             try {
@@ -33,9 +60,7 @@
                     decodedData += String.fromCharCode(cipher.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length));
                 }
                 return JSON.parse(decodeURIComponent(decodedData));
-            } catch(e) {
-                return null;
-            }
+            } catch(e) { return null; }
         }
 
         window.onload = () => {
@@ -45,6 +70,7 @@
             const msgEl = document.getElementById('message');
             const loader = document.getElementById('loader');
             const icon = document.getElementById('icon');
+            const webviewWarn = document.getElementById('webview-warning');
 
             function showState(isSuccess, title, msg) {
                 loader.classList.add('hidden');
@@ -57,28 +83,22 @@
                 msgEl.innerText = msg;
             }
 
-            if (!token) {
-                showState(false, "وصول مرفوض", "لا يوجد تصريح دخول صالح لهذا الرابط.");
-                return;
-            }
+            if (!token) { showState(false, "وصول مرفوض", "لا يوجد تصريح دخول صالح."); return; }
 
             const data = decipherToken(token);
+            if (!data || !data.u || !data.e) { showState(false, "رابط تالف", "بنية التشفير غير صحيحة."); return; }
+            if (Date.now() > data.e) { showState(false, "انتهت الصلاحية", "انقضت مدة الرابط."); return; }
 
-            if (!data || !data.u || !data.e) {
-                showState(false, "رابط تالف", "بنية التشفير غير صحيحة أو تم التلاعب بها.");
+            targetUrl = data.u;
+
+            if (isWebView()) {
+                showState(false, "⚠️ متصفح مدمج", "افتح الرابط في Chrome أو Safari.");
+                webviewWarn.classList.remove('hidden');
                 return;
             }
 
-            if (Date.now() > data.e) {
-                showState(false, "انتهت الصلاحية", "عذراً، انقضت المدة المحددة لهذا الرابط. يرجى طلب رابط جديد.");
-                return;
-            }
-
-            // Success
-            showState(true, "تم التصريح", "تشفير سليم. جاري توجيهك إلى نظام الحسابات V3.1...");
-            setTimeout(() => {
-                window.location.replace(data.u);
-            }, 1500);
+            showState(true, "تم التصريح", "جاري توجيهك...");
+            setTimeout(() => { window.location.replace(data.u); }, 1500);
         };
     </script>
 </body>
