@@ -163,22 +163,43 @@ var SDB = {
       if(!ref) ref = new Date().getFullYear()+'-'+String(Date.now()).slice(-4);
 
       // Compress signatures and photos to prevent size issues
+      // Returns Promise that resolves with compressed base64
       var compressBase64 = function(b64) {
-        if(!b64 || b64.length < 50000) return b64;
-        try {
-          var canvas = document.createElement('canvas');
-          var img = new Image(); img.src = b64;
-          canvas.width = Math.min(img.width||400, 400);
-          canvas.height = Math.min(img.height||300, 300);
-          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-          return canvas.toDataURL('image/jpeg', 0.4);
-        } catch(e) { return b64; }
+        return new Promise(function(resolve) {
+          if(!b64) { resolve(null); return; }
+          if(b64.length < 80000) { resolve(b64); return; }
+          try {
+            var img = new Image();
+            img.onload = function() {
+              try {
+                var canvas = document.createElement('canvas');
+                var maxW = 500, maxH = 400;
+                var w = img.width || 500, h = img.height || 400;
+                if(w > maxW) { h = h * maxW / w; w = maxW; }
+                if(h > maxH) { w = w * maxH / h; h = maxH; }
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                resolve(canvas.toDataURL('image/jpeg', 0.5));
+              } catch(e) { console.warn('Compress error:', e); resolve(b64); }
+            };
+            img.onerror = function() { resolve(b64); };
+            img.src = b64;
+          } catch(e) { resolve(b64); }
+        });
       };
 
+      // Compress all images in parallel
+      var photoKeys = data.idPhotos ? Object.keys(data.idPhotos) : [];
       var compressedPhotos = {};
-      if(data.idPhotos) { Object.keys(data.idPhotos).forEach(function(k) { compressedPhotos[k] = compressBase64(data.idPhotos[k]); }); }
-      var compressedSigs = (data.sampleSignatures||[]).map(function(s) { return compressBase64(s); });
-      var compressedMainSig = compressBase64(data.mainSignature);
+      for(var pk = 0; pk < photoKeys.length; pk++) {
+        compressedPhotos[photoKeys[pk]] = await compressBase64(data.idPhotos[photoKeys[pk]]);
+      }
+      var compressedSigs = [];
+      var sigArr = data.sampleSignatures || [];
+      for(var si = 0; si < sigArr.length; si++) {
+        compressedSigs.push(await compressBase64(sigArr[si]));
+      }
+      var compressedMainSig = await compressBase64(data.mainSignature);
 
       var row = {
         ref_number: ref, status:'pending', account_type:data.accountType,
