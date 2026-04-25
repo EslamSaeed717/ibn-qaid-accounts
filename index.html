@@ -178,7 +178,9 @@ var SDB = {
       var compressBase64 = function(b64) {
         return new Promise(function(resolve) {
           if(!b64 || typeof b64 !== 'string') { resolve(null); return; }
-          if(b64.length < 80000) { resolve(b64); return; }
+          // Always try to compress to ensure consistency and manageable size
+          // Only skip if already very small
+          if(b64.length < 20000) { resolve(b64); return; }
           try {
             var img = new Image();
             var timer = setTimeout(function(){ resolve(b64); }, 5000); // Timeout 5s
@@ -263,25 +265,23 @@ var SDB = {
       }
 
       console.log('📤 Sending to Supabase...');
-      var insertResult = await supabase.from('submissions').insert([row]).select();
-      console.log('🔵 [6/6] Insert response:', insertResult);
+      // Use standard insert without select() first to maximize compatibility with RLS
+      var insertResult = await supabase.from('submissions').insert([row]);
+      console.log('🔵 [6/6] Insert response status:', insertResult.status);
 
       if(insertResult.error) {
         var errMsg = insertResult.error.message || 'خطأ غير معروف';
-        var errDetails = insertResult.error.details || '';
-        var errHint = insertResult.error.hint || '';
-        var errCode = insertResult.error.code || '';
-        console.error('❌ INSERT ERROR:', {message:errMsg, details:errDetails, hint:errHint, code:errCode});
-        return {success:false, error:'خطأ DB: ' + errMsg + (errDetails?' | '+errDetails:'') + (errCode?' [code:'+errCode+']':'')};
+        console.error('❌ INSERT ERROR:', insertResult.error);
+        return {success:false, error:'خطأ في قاعدة البيانات: ' + errMsg};
       }
 
-      if(!insertResult.data || insertResult.data.length === 0) {
-        console.error('❌ Insert returned no data (likely RLS block)');
-        return {success:false, error:'لم يتم إدراج البيانات. تحقق من سياسات RLS في Supabase.'};
+      // If status is 201 (Created), it's a success even if select() fails or is blocked
+      if(insertResult.status === 201 || insertResult.status === 200) {
+        console.log('✅✅✅ SUBMISSION SUCCESS, ref:', ref);
+        return {success:true, ref:ref, data:row};
       }
 
-      console.log('✅✅✅ SUBMISSION SUCCESS, ref:', ref);
-      return {success:true, ref:ref, data:insertResult.data[0]};
+      return {success:false, error:'فشل الحفظ في قاعدة البيانات (Status: '+insertResult.status+')'};
 
     } catch(e) {
       var errStr = e && e.message ? e.message : (e && e.toString ? e.toString() : 'خطأ غير محدد');
