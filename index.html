@@ -126,13 +126,13 @@ var EJS = {serviceId:'service_5pk9nck',templateId:'template_pqhk06u',publicKey:'
 var SDB = {
   // Get settings
   getSettings: async function() {
+    if(!supabase) initSupabase();
     if(supabase) {
       try {
         var {data} = await supabase.from('app_settings').select('config').eq('id',1).single();
         if(data && data.config) return data.config;
-      } catch(e) {}
+      } catch(e) { console.warn('Supabase getSettings failed:', e); }
     }
-    // Fallback
     return SDB._defaultSettings();
   },
   getSettingsSync: function() {
@@ -142,7 +142,8 @@ var SDB = {
   cacheSettings: function(s) { try { localStorage.setItem('iq4_settings', JSON.stringify(s)); } catch(e) {} },
   saveSettings: async function(config) {
     SDB.cacheSettings(config);
-    if(supabase) { try { await supabase.from('app_settings').update({config:config,updated_at:new Date().toISOString()}).eq('id',1); } catch(e) {} }
+    if(!supabase) initSupabase();
+    if(supabase) { try { await supabase.from('app_settings').update({config:config,updated_at:new Date().toISOString()}).eq('id',1); } catch(e) { console.error('Supabase saveSettings failed:', e); } }
   },
   // Submissions
   submitForm: async function(data) {
@@ -302,30 +303,34 @@ var SDB = {
     return [];
   },
   updateSubmission: async function(ref, updates) {
+    if(!supabase) initSupabase();
     if(supabase) {
       try { await supabase.from('submissions').update(updates).eq('ref_number',ref); } catch(e) {}
     }
   },
   deleteSubmission: async function(ref) {
+    if(!supabase) initSupabase();
     if(supabase) {
       try { await supabase.from('submissions').delete().eq('ref_number',ref); } catch(e) {}
     }
   },
   // Survey
   submitSurvey: async function(data) {
+    if(!supabase) initSupabase();
     if(supabase) {
       try { await supabase.from('survey_responses').insert([data]); } catch(e) {}
     }
   },
   // Admin users
   getAdminUsers: async function() {
+    if(!supabase) initSupabase();
     if(supabase) {
       try { var {data} = await supabase.from('admin_users').select('*'); return data || []; } catch(e) {}
     }
     return [];
   },
   login: async function(username, password) {
-    // Try Supabase first
+    if(!supabase) initSupabase();
     if(supabase) {
       try {
         var {data} = await supabase.from('admin_users').select('*').eq('username',username).eq('password_hash',password).eq('active',true).single();
@@ -337,23 +342,27 @@ var SDB = {
     return null;
   },
   addUser: async function(user) {
+    if(!supabase) initSupabase();
     if(supabase) {
       try { await supabase.from('admin_users').insert([user]); return true; } catch(e) { return false; }
     }
     return false;
   },
   updateUser: async function(id, updates) {
+    if(!supabase) initSupabase();
     if(supabase) {
       try { await supabase.from('admin_users').update(updates).eq('id',id); } catch(e) {}
     }
   },
   deleteUser: async function(id) {
+    if(!supabase) initSupabase();
     if(supabase) {
       try { await supabase.from('admin_users').delete().eq('id',id); } catch(e) {}
     }
   },
   // Upload file
   uploadFile: async function(bucket, path, base64Data) {
+    if(!supabase) initSupabase();
     if(!supabase || !base64Data) return null;
     try {
       var byteString = atob(base64Data.split(',')[1]);
