@@ -561,13 +561,14 @@ var LoginScreen=function(p){
 /* ===== ROOT APP ===== */
 var App=function(){
   var _u=useState(null),user=_u[0],setUser=_u[1];
-  var _v=useState(function(){return window.location.hash==='#admin'?'login':'welcome';}),view=_v[0],setView=_v[1];
+  var getInitialView=function(){var hash=window.location.hash;console.log('🔵 Initial hash detected:',hash);if(hash==='#admin'||hash.startsWith('#admin?')){console.log('✅ Admin mode detected');return 'login';}return 'welcome';};
+  var _v=useState(getInitialView()),view=_v[0],setView=_v[1];
   var _s=useState(SDB.getSettingsSync()),settings=_s[0],setSettings=_s[1];
   var _loading=useState(true),appLoading=_loading[0],setAppLoading=_loading[1];
 
   useEffect(function(){
     SDB.getSettings().then(function(s){setSettings(s);SDB.cacheSettings(s);setAppLoading(false);}).catch(function(){setAppLoading(false);});
-    var h=function(){if(window.location.hash==='#admin'){setView('login');setUser(null);}else{setView('welcome');setUser(null);}};
+    var h=function(){var hash=window.location.hash;console.log('🔵 Hash changed to:',hash);if(hash==='#admin'||hash.startsWith('#admin?')){console.log('✅ Switching to admin login');setView('login');setUser(null);}else{console.log('✅ Switching to welcome');setView('welcome');setUser(null);}};
     window.addEventListener('hashchange',h);return function(){window.removeEventListener('hashchange',h);};
   },[]);
 
